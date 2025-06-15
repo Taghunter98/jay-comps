@@ -8,6 +8,7 @@ node_modules/
 test.html
 test/
 test.css
+imports.js
 
 # TypeScript compiled JavaScript
 dist/
