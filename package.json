@@ -1,0 +1,31 @@
+{
+  "name": "jay-comps",
+  "version": "1.0.0",
+  "description": "Jay is a lean and lightweight framework that puts the control and creativity of traditional web development with modular and scalable component architecture.",
+  "main": "src/comp.js",
+  "scripts": {
+    "test": "echo \\\"Error: no test specified\\\" && exit 1",
+    "format": "eslint --fix \"app/static/jay-comps/**/*.{js,jsx,ts,tsx}\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Taghunter98/jay-comps.git"
+  },
+   "devDependencies": {
+    "typescript": "^5.8.3",
+    "eslint": "^9.28.0",
+    "eslint-plugin-align-assignments": "^1.1.2"
+  },
+  "keywords": [
+    "framework",
+    "JavaScript",
+    "TypeScript",
+    "components"
+  ],
+  "author": "Josh Bassett",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Taghunter98/jay-comps/issues"
+  },
+  "homepage": "https://github.com/Taghunter98/jay-comps#readme"
+}

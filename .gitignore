@@ -1,0 +1,5 @@
+# Ingore npm stuff
+node_modules/
+
+# Ignore vscode workspace settings
+.vscode/
