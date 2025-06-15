@@ -1,18 +1,18 @@
 /**
  * Copyright (c) 2025 Josh Bassett, whondo.com
  * 
- * Filename:    animation.js
- * Author:      Sarit Samkumpim
+ * Filename:    effect.ts
+ * Authors:     Sarit Samkumpim, Josh Bassett
  * Date:        11/06/2025
  * Version:     1.1
  * 
- * Description: Base animation class for CSS injection for components.
+ * Description: Base effect class for CSS injection for components.
  */
 
-export class Animate {
+export class Effects {
 
     /**
-     * @brief A method that provides a animation shorthand property.
+     * @brief A method that provides a effect shorthand property.
      * 
      * @param {string} aniName 
      * @param {int}    duration 
@@ -23,18 +23,18 @@ export class Animate {
      * 
      * @param {string} fillMode 
      * 
-     * @returns {literal} A CSS string literal with animation properties
+     * @returns {literal} A CSS string literal with effect properties
      */
-    prop(aniName, duration, timing = "ease", delay = "0", iterate = "1", direction = "normal", fillMode = "none" ) {
+    prop(aniName: string, duration: string, timing = "ease", delay = "0", iterate = "1", direction = "normal", fillMode = "none" ) {
 
         return `${aniName} ${duration}s ${timing} ${delay}s ${iterate} ${direction} ${fillMode};`;
     
     }
 
     /**
-    * @brief A method that provides an animation for fading in an element.
+    * @brief A method that provides an effect for fading in an element.
     * 
-    * @returns {literal} A CSS string literal with animation properties
+    * @returns {literal} A CSS string literal with effect properties
     */
     fadeIn(){
 
@@ -53,9 +53,9 @@ export class Animate {
     }
 
     /**
-     * @brief A method that provides an animation for fading out an element.
+     * @brief A method that provides an effect for fading out an element.
      *
-     * @returns {literal} A CSS string literal with animation properties
+     * @returns {literal} A CSS string literal with effect properties
      */
     fadeOut(){
 
@@ -74,19 +74,19 @@ export class Animate {
     }
 
     /**
-     * @brief A method that provides an animation for fading in an element from the left.
+     * @brief A method that provides an effect for fading in an element from the left.
      * 
-     * @param {number} x
+     * @param {number} translateX
      * 
-     * @returns {literal} A CSS string literal with animation properties
+     * @returns {literal} A CSS string literal with effect properties
      */
-    fadeLeft(x){
+    fadeLeft(translateX: number){
 
         return /*css */ `
             @keyframes fadeLeft {
                 0% {
                     opacity: 0;
-                    transform: translateX(${x}px);
+                    transform: translateX(${translateX}px);
                 }
 
                 100% {
@@ -101,13 +101,13 @@ export class Animate {
     }
 
     /**
-     * @brief A method that provides an animation for fading in an element from the right.
+     * @brief A method that provides an effect for fading in an element from the right.
      * 
-     * @param {number} x
+     * @param {number} translateX
      * 
-     * @returns {literal} A CSS string literal with animation properties
+     * @returns {literal} A CSS string literal with effect properties
      */
-    fadeRight(x) {
+    fadeRight(translateX: number) {
 
         return /*css*/ `
             @keyframes fadeRight {
@@ -119,7 +119,7 @@ export class Animate {
 
                 100% {
                     opacity: 1;
-                    transform: translateX(${x}px);
+                    transform: translateX(${translateX}px);
 
                 }
             }
@@ -128,19 +128,19 @@ export class Animate {
     } 
 
     /**
-     * @brief A method that provides an animation for sliding an element from the bottom.
+     * @brief A method that provides an effect for sliding an element from the bottom.
      * 
-     * @param {number} y
+     * @param {number} translateY
      * 
-     * @returns {literal} A CSS string literal with animation properties
+     * @returns {literal} A CSS string literal with effect properties
      */
-    slideUp(y){
+    slideUp(translateY: number){
 
         return /* css */ `
             @keyframes slideUp {
                 0% {
                     opacity: 0;
-                    transform: translateY(${y}px);
+                    transform: translateY(${translateY}px);
                 }
 
                 100% {
@@ -154,19 +154,19 @@ export class Animate {
 
     /**
      * 
-     * @brief A method that provides an animation for sliding an element from the top.
+     * @brief A method that provides an effect for sliding an element from the top.
      * 
-     * @param {number} y
+     * @param {number} translateY
      *
-     * @returns {literal} A CSS string literal with animation properties
+     * @returns {literal} A CSS string literal with effect properties
      */
-    slideDown(y) {
+    slideDown(translateY: number) {
 
         return /*css */ `
             @keyframes slideDown {
                 0% {
                     opacity: 0;
-                    transform: translateY(${y}px);
+                    transform: translateY(${translateY}px);
                 }
 
                 100% {
@@ -179,25 +179,25 @@ export class Animate {
     }
 
     /**
-     * @brief A method that provides an animation for scaling an element.
+     * @brief A method that provides an effect for scaling an element.
      * 
-     * @param {number} to
-     * @param {number} from
+     * @param {number} scaleFrom
+     * @param {number} scaleTo
      * 
-     * @returns {literal} A CSS string literal with animation properties
+     * @returns {literal} A CSS string literal with effect properties
      */
-    scale(to, from){
+    scale(scaleFrom: number, scaleTo: number){
 
         return /*css */ `
             @keyframes scaleIn {
                 0% {
                     opacity: 0;
-                    transform: scale(${to});
+                    transform: scale(${scaleFrom});
                 }
 
                 100% {
                     opacity: 1;
-                    transform: scale(${from});
+                    transform: scale(${scaleTo});
                 }
             }
         `;
@@ -205,9 +205,9 @@ export class Animate {
     }
     
     /**
-     * @brief A method that provides an animation for pulsing an element, scales then shrinks.
+     * @brief A method that provides an effect for pulsing an element, scales then shrinks.
      * 
-     * @returns {literal} A CSS string literal with animation properties
+     * @returns {literal} A CSS string literal with effect properties
      */
     pulse() {
 
@@ -230,13 +230,13 @@ export class Animate {
     }
 
     /**
-     * @brief A method that provides an animation for fading out an element to the right.
+     * @brief A method that provides an effect for fading out an element to the right.
      * 
      * @param {number} x
      * 
-     * @returns {literal} A CSS string literal with animation properties
+     * @returns {literal} A CSS string literal with effect properties
      */
-    fadeOutRight(x){
+    fadeOutRight(translateX: number){
 
         return /*css */ `
             @keyframes fadeOutRight {
@@ -248,7 +248,7 @@ export class Animate {
 
                 100% {
                     opacity: 0;
-                    transform: translateX(${x}px)
+                    transform: translateX(${translateX}px)
 
                 }
             }
@@ -258,13 +258,13 @@ export class Animate {
 
 
     /**
-     * @brief A method that provides an animation for fading out an element to the left.
+     * @brief A method that provides an effect for fading out an element to the left.
      * 
      * @param {number} x
      * 
-     * @returns {literal} A CSS string literal with animation properties
+     * @returns {literal} A CSS string literal with effect properties
      */
-    fadeOutLeft(x) {
+    fadeOutLeft(translateX: number) {
 
         return /* css */ `
             @keyframes fadeOutLeft {
@@ -275,7 +275,7 @@ export class Animate {
 
                 100% {
                     opacity: 0;
-                    transform: translateX(${x}px)
+                    transform: translateX(${translateX}px)
                 }
             }
         `;

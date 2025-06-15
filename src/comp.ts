@@ -9,9 +9,9 @@
  * Description: Base Comp class that handles all Comp inner logic.
  */
 
-import { API } from './api.ts';
+import { API } from './api.js';
 import { Design } from "./design.js";
-//import { Animate } from "./animate.js";
+import { Effects } from "./effects.js";
 
 /**
  * Abstract base class for components.
@@ -28,7 +28,7 @@ export abstract class Comp extends HTMLElement {
     protected css_: string;
     public design: Design;
     public api: API;
-    //public animate: Animate;
+    public effect: Effects;
 
     constructor() {
 
@@ -39,7 +39,7 @@ export abstract class Comp extends HTMLElement {
         this.css_   = "";
         this.design = new Design();
         this.api    = new API();
-        //this.animate = new Animate();
+        this.effect = new Effects();
 
         this.attachShadow({ mode: "open" });
     

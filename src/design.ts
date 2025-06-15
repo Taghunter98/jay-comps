@@ -9,7 +9,11 @@
  * Description: Base style class for CSS injection for components.
  */
 
-import { Animate } from "./animate.js";
+import { Effects } from "./effects.js";
+
+export type CSSValue = string | number | boolean | null | undefined;
+
+export type CSSConfig = Record<string, CSSValue>;
 
 export class Design {
 
@@ -26,7 +30,7 @@ export class Design {
      */
     defaultComp() {
 
-        const animate = new Animate();
+        const effect = new Effects();
 
         return  /* css */ `
         * {
@@ -80,16 +84,16 @@ export class Design {
             line-height: 16pt;
         }
 
-        ${animate.pulse()}
-        ${animate.scale()}
-        ${animate.slideUp(20)}
-        ${animate.slideDown(-20)}
-        ${animate.fadeIn()}
-        ${animate.fadeOut()}
-        ${animate.fadeLeft(-20)}
-        ${animate.fadeRight(20)}
-        ${animate.fadeOutLeft(-20)}
-        ${animate.fadeOutRight(20)}
+        ${effect.pulse()}
+        ${effect.scale(0, 20)}
+        ${effect.slideUp(20)}
+        ${effect.slideDown(-20)}
+        ${effect.fadeIn()}
+        ${effect.fadeOut()}
+        ${effect.fadeLeft(-20)}
+        ${effect.fadeRight(20)}
+        ${effect.fadeOutLeft(-20)}
+        ${effect.fadeOutRight(20)}
         `;
     
     }
@@ -101,7 +105,7 @@ export class Design {
      * 
      * @returns {string} CSS friendly variable name
      */
-    parseVariables(variableName) {
+    parseVariables(variableName: string) {
 
         return variableName.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 
@@ -114,15 +118,15 @@ export class Design {
      * 
      * @returns {string | number} Compilable CSS value
      */
-    americanise(value) {
+    americanise(value: string): string {
 
-        const britishToAmerican = {
+        const convert: Record<string, string> = {
             "colour": "color",
             "centre": "center",
             "grey": "gray",
             "behaviour": "behavior"
         };
-        return britishToAmerican[value] || value;
+        return convert[value] || value;
 
     }
 
@@ -133,7 +137,7 @@ export class Design {
      * 
      * @returns {string | number} Compilable CSS value
      */
-    check(value) {
+    check(value: CSSValue) {
 
         return typeof value === 'number' ? `${value}px` : value;
     
@@ -146,7 +150,7 @@ export class Design {
      * 
      * @returns Compilable CSS value
      */
-    checkFont(value) {
+    checkFont(value: CSSValue) {
 
         return typeof value === 'number' ? `${value}pt` : value;
     
@@ -224,7 +228,7 @@ export class Design {
      * 
      * @returns {string} A CSS string to be injected into the component.
      */
-    create(css) {
+    create(css: CSSConfig): string {
 
         let cssSelector = (css.psuedoClass) ? `${css.class}:${css.psuedoClass}` : css.class;
 
@@ -252,7 +256,7 @@ export class Design {
      * 
      * @returns {literal} Compiled CSS code to be injected
      */
-    compileCSS(css) {
+    compileCSS(css: CSSConfig): string {
 
         let cssString = "";
 
@@ -260,7 +264,7 @@ export class Design {
 
             if (value === "valueID") continue;
 
-            let cssValue = css[value];
+            let cssValue: CSSValue = css[value];
 
             if (value === "fontSize") cssValue = this.checkFont(cssValue);
             else if (value === "background" || value === "colour" || value === "border") cssValue = `var(--${cssValue})`;
@@ -268,7 +272,9 @@ export class Design {
             else if (value === "opacity") cssValue = cssValue;
             else cssValue = this.check(cssValue);
 
-            cssString += `${this.americanise(this.parseVariables(value))}: ${this.americanise(cssValue)};\n`;
+            if (typeof(cssValue) == "string") cssValue == this.americanise(cssValue);
+
+            cssString += `${this.americanise(this.parseVariables(value))}: ${cssValue};\n`;
         
         }
 
