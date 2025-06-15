@@ -5,17 +5,23 @@
   "main": "src/comp.js",
   "scripts": {
     "test": "echo \\\"Error: no test specified\\\" && exit 1",
-    "format": "eslint --fix \"app/static/jay-comps/**/*.{js,jsx,ts,tsx}\""
+    "format": "eslint --fix \"src/**/*.{js,jsx,ts,tsx}\""
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Taghunter98/jay-comps.git"
   },
-   "devDependencies": {
-    "typescript": "^5.8.3",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.34.0",
+    "@typescript-eslint/parser": "^8.34.0",
     "eslint": "^9.28.0",
-    "eslint-plugin-align-assignments": "^1.1.2"
+    "eslint-plugin-align-assignments": "^1.1.2",
+    "ts-loader": "^9.5.2",
+    "typescript": "^5.8.3",
+    "webpack": "^5.99.9",
+    "webpack-cli": "^6.0.1"
   },
+  "type": "module",
   "keywords": [
     "framework",
     "JavaScript",
