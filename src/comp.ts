@@ -14,12 +14,78 @@ import { Design } from "./design.js";
 import { Effects } from "./effects.js";
 
 /**
- * Abstract base class for components.
+ * # Comp
  * 
- * Every component (Comp) should extend this class and override the following methods:
- * - `createHTML()`: Return the HTML markup for the component.
- * - `createCSS()`: Return the CSS rules that will be injected into the Shadow DOM.
- * - `hook()`: Define the component's inner JavaScript logic (event listeners, etc.).
+ * Abstract base class for Comps that handles core logic.
+ * 
+ * ### Overview:
+ * This class serves as the foundation for every component (Comp). Derived classes must override:
+ * - **createHTML()**: Provides the component's HTML structure.
+ * - **createCSS()**: Defines the component-specific styles.
+ * - **hook()**: Implements JavaScript logic within the component.
+ * 
+ * ### Properties:
+ * - **name** (`string`): The name of the component.
+ * - **html** (`string`): The HTML structure of the component.
+ * - **css** (`string`): The CSS rules applied to the component.
+ * - **design** (`Design`): A reference to the Design class for styling.
+ * - **api** (`API`): A reference to the API handler for data management.
+ * - **effect** (`Effects`): A reference to the Effects class for animations.
+ * 
+ * ### Methods:
+ * - **render()**: Updates the component's Shadow DOM.
+ * - **update(newHTML, newCSS)**: Updates the component’s content and re-renders.
+ * - **debug()**: Logs the component's data for debugging purposes.
+ * 
+ * ### Example:
+ * ```js
+ * class MyComp extends Comp {
+ *     
+ *     constructor() {
+ *         
+ *         super();
+ *         
+ *         this.hello_ = "Hello World!"; 
+ *      
+ *         this.name_ = "Comp";
+ *         this.html_ = createHTML();           
+ *         this.css_  = createCSS();
+ * 
+ *         this.render();
+ *         
+ *     }
+ * 
+ *     createHTML() {
+ *      
+ *         return `<button class="hello">${this.hello_}</button>`;
+ * 
+ *     }
+ * 
+ *     createCSS() {
+ *         
+ *         const style = this.design.create({
+ *             class: "hello",
+ *             background: "black100",
+ *             colour: "white",
+ *             padding: 10,
+ *             borderRadius: 8
+ *         });
+ * 
+ *         return `${style}`;
+ *     }
+ * 
+ *     hook() {
+ * 
+ *         this.shadowRoot
+ *             .querySelector('button')
+ *             .addEventListener("click", () => {
+ *                 console.log(this.hello_);
+ *         });
+ * 
+ *     }
+ * 
+ * }
+ * ```
  */
 export abstract class Comp extends HTMLElement {
 
@@ -82,15 +148,21 @@ export abstract class Comp extends HTMLElement {
     }
 
     /**
-   * Creates an HTML template that wraps the component markup together with its CSS.
-   *
-   * The template includes the component's HTML and a <style> block that injects default styles
-   * (via this.design.defaultComp()) along with the component-specific CSS.
-   *
-   * @param html - The component's HTML markup.
-   * @param css - The component-specific CSS string.
-   * @returns The complete HTML template as a string.
-   */
+     * ## createTemplate
+     * 
+     * Builds an HTML Element template string.
+     * 
+     * ### Behaviour:
+     * The method takes two string arguments with the HTML and CSS data that is
+     * injected into a template string.
+     * 
+     * ### Parameters:
+     * - **html** (`string`): The html to be rendered.
+     * - **css** (`string`): The css to be rendered.
+     * 
+     * ### Returns:
+     * `string` - Template string to be injected.
+     */
     createTemplate(html: string, css: string): string {
 
         return /* html */ `
@@ -104,8 +176,19 @@ export abstract class Comp extends HTMLElement {
     }
 
     /**
-     * Debug method for logging the component's base values.
-     */
+     * ## debug
+     * 
+     * Prints debug information to console.
+     * 
+     * ### Behaviour:
+     * The method prints out the Comp `name`, `html_` and `css_` attributes to the console for
+     * debugging.
+     * 
+     * ### Example:
+     * ```js
+     * this.debug()
+     * ```
+ */
     debug(): void {
 
         console.log("DEBUG COMP: " + this.name);
@@ -116,9 +199,27 @@ export abstract class Comp extends HTMLElement {
     }
 
     /**
-     * Renders the component by setting the Shadow DOM's innerHTML to the generated template.
+     * ## Render
+     * 
+     * Renders the Comp to the screen.
+     * 
+     * ### Behaviour:
+     * Method renders the Comp by setting the Shadow DOM's innerHTML to the generated template.
      * 
      * If a hook (an internal build method) is defined, it will be invoked afterward.
+     * 
+     * ### Example:
+     * ```js
+     * constructor() {
+     *     
+     *     // Build template first or render will fail
+     *     this.name_ = "Comp";
+     *     this.html_ = this.createHTML();
+     *     this.css_  = this.createCSS();
+     *     
+     *     this.render();
+     * }
+     * ```
      */
     render(): void {
 
@@ -137,10 +238,27 @@ export abstract class Comp extends HTMLElement {
     }
 
     /**
-     * Updates the component's HTML and CSS, and re-renders it.
-     *
-     * @param newHTML - The new HTML for the component.
-     * @param newCSS - The new CSS for the component.
+     * # update
+     * 
+     * Updates the Comp with new HTML/CSS.
+     * 
+     * ### Behaviour:
+     * Method updates the Comp's internal HTML/CSS with new values.
+     * 
+     * Then renders the Comp with the new template.
+     * 
+     * ### Parameters:
+     * - **newHTML** (`string`): The new HTML to be injected.
+     * - **newCSS** (`string`): The new CSS to be injected.
+     * 
+     * ### Example:
+     * ```js
+     * set buttonText(newButtonText) {
+     * 
+     *     this.buttonText_ = newButtonText;
+     *     this.update(this.createHTML(), this.css_);
+     * }
+     * ```
      */
     update(newHTML: string, newCSS: string): void {
 
@@ -150,57 +268,13 @@ export abstract class Comp extends HTMLElement {
     
     }
 
-  /**
-   * Abstract method to generate the component's HTML.
-   * 
-   * This method must be overridden in derived components to provide the HTML structure.
-   *
-   * @returns The HTML markup as a string.
-   *
-   * @example
-   * createHTML() {
-   *    return `
-   *      <div class="comp-object">
-   *        <h1>Hello, World!</h1>
-   *      </div>
-   *    `;
-   * }
-   */
-  abstract createHTML(): string;
+    /**
+     * Abstract methods to be overriden.
+     */
+    abstract createHTML(): string;
 
-  /**
-   * Abstract method to generate the component's CSS.
-   * 
-   * This method must be overridden in derived components to provide the component-specific CSS.
-   *
-   * @returns The CSS rules as a string.
-   *
-   * @example
-   * createCSS() {
-   *    return this.design.styleCompCSS({
-   *         valueID: "container",
-   *         psuedoClass: "hover",
-   *         display: "flex",
-   *         // ...additional style properties
-   *    });
-   * }
-   */
-  abstract createCSS(): string;
+    abstract createCSS(): string;
 
-  /**
-   * Abstract build hook for the component's inner JavaScript.
-   * 
-   * Derived classes should override this method to implement internal logic,
-   * such as adding event listeners or altering component state after rendering.
-   *
-   * @example
-   * hook() {
-   *   const button = this.shadowRoot.getElementById("submit");
-   *   button.addEventListener("click", () => {
-   *      // Custom logic here...
-   *   });
-   * }
-   */
-  abstract hook(): void;
+    abstract hook(): void;
 
 }
