@@ -43,19 +43,18 @@ export type CSSConfig = Record<string, CSSValue>;
 export class Design {
 
     /**
-     * Returns the default CSS for components.
-     *
-     * This method provides standard CSS to remove all margin and padding,
-     * ensuring that all elements (including those within a shadow DOM)
-     * are rendered as block-level elements. It also includes default typography
-     * based on Material 3 settings and a suite of preset animation effects.
-     *
-     * @returns {string} CSS code with default settings.
-     *
-     * @example
-     * const design = new Design();
-     * const defaultCSS = design.defaultComp();
-     * console.log(defaultCSS);
+     * ## defaultComp
+     * 
+     * Injects basic Comp CSS.
+     * 
+     * ### Behaviour:
+     * Method injects values:
+     * - `root` values to ensure shadow DOM elements inherit correctly.
+     * - Typograpgy styles modelled on Material design for accessibility.
+     * - Standard nimation library.
+     * 
+     * ### Returns:
+     * `string` - Default CSS to be injected.
      */
     defaultComp() {
 
@@ -138,6 +137,7 @@ export class Design {
      * **Example Usage:**
      *
      * ```js
+     * 
      * const cssConfig = {
      *   valueID: "container",
      *   psuedoClass: "hover",
@@ -190,6 +190,7 @@ export class Design {
      * **Example Usage:**
      *
      * ```js
+     * 
      * const cssConfig = {
      *   class: "container",
      *   psuedoClass: "hover",
@@ -264,6 +265,7 @@ export class Design {
      * 
      * ### Example:
      * ```js
+     * 
      * const c = "fontSize";
      * const k = parseVariables(c);
      * console.log(c + " -> " + k);
@@ -297,6 +299,7 @@ export class Design {
      * 
      * ### Example:
      * ```js
+     * 
      * const brit = "colour";
      * const amer = americanise(brit);
      * console.log(brit + " -> " + amer);
@@ -338,6 +341,7 @@ export class Design {
      * 
      * ### Example:
      * ```js
+     * 
      * const key = "fontSize";
      * const val = 200;
      * const css = check(key, val);

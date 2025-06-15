@@ -39,6 +39,7 @@ import { Effects } from "./effects.js";
  * 
  * ### Example:
  * ```js
+ * 
  * class MyComp extends Comp {
  *     
  *     constructor() {
@@ -186,6 +187,7 @@ export abstract class Comp extends HTMLElement {
      * 
      * ### Example:
      * ```js
+     * 
      * this.debug()
      * ```
  */
@@ -210,9 +212,9 @@ export abstract class Comp extends HTMLElement {
      * 
      * ### Example:
      * ```js
+     * 
      * constructor() {
-     *     
-     *     // Build template first or render will fail
+     *   
      *     this.name_ = "Comp";
      *     this.html_ = this.createHTML();
      *     this.css_  = this.createCSS();
@@ -253,6 +255,7 @@ export abstract class Comp extends HTMLElement {
      * 
      * ### Example:
      * ```js
+     * 
      * set buttonText(newButtonText) {
      * 
      *     this.buttonText_ = newButtonText;

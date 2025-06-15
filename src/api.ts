@@ -9,77 +9,92 @@
  * Description: Base API class that handles all Comp HTTP request logic.
  */
 
+/**
+ * # API
+ * 
+ * Class for HTTP requests.
+ * 
+ * ### Overview:
+ * Provides a method `request` to abstract from JavaScript's `fetch` API.
+ * 
+ * ### Methods:
+ * - **request**: Makes a GET or POST HTTP request.
+ */
 export class API {
 
     /**
-     * @brief A method that handles `GET` and `POST` HTTP requests.
+     * ## request
      * 
-     * The request logic is handled internally, to retrieve an HTTP request value,
-     * specify the URL and Method (GET/POST) and data if applicable.
+     * Perfoms a GET or POST HTTP request.
      * 
-     * The data needs to be handled in an `async` function to deal with the `Promise` object.
+     * ### Behaviour:
+     * Method performs an HTTP request, validates the input, handles any errors and returns
+     * a valid JSON reponse.
      * 
-     * @example
-     * // Function returns login REST API values
-     * async login(result, json) {
+     * To use this method, you need to contain it within an `async` function in order to read
+     * the Promise that is returned.
      * 
-     *      let data = await this.compAPI.request("/login", "POST", json);
+     * ### Parameters:
+     * - **url** (`string`): The url of the REST API endpoint.
+     * - **method** (`string`): The request method `POST` or `GET`.
+     * - **data** (`Object`): The JSOn data as a JavaScript object.
      * 
-     *      (data.status) ? result.innerHTML = data.message : result.innerHTML = data.error;
+     * ### Returns:
+     * `Promise` - The request data.
+     * 
+     * ### Example:
+     * ```js
+     *
+     * async post(result, json) {
+     * 
+     *     let data = await this.api.request("/login", "POST", json);
+     *     (data.status) ? result.innerHTML = data.message : result.innerHTML = data.error;
+     * 
      * }
      * 
-     * @param {string} apiURL 
-     * @param {string} apiMethod 
-     * @param {object} apiData 
+     * ```
+     * ```js
+     * async get() {
      * 
-     * @returns {Promise} JSON data to be parsed
+     *     const data = await this.api.request("/fact", "GET");
+     *     console.log(data.fact);
+     * 
+     * }
+     * ```
      */
-    async request(apiURL: string, apiMethod: string, apiData: Object) {
+    async request<T>(url: string, method: string, data?: Object): Promise<T> {
 
-        if (apiMethod === "POST") {
+        if (method != "POST" && method != "GET") {
+
+            throw new Error("Unsupported or invalid method type");
         
-            try {
+        }
 
-                const response: Response = await fetch(apiURL, {
-                    method: apiMethod,
-                    body: JSON.stringify(apiData),
-                    headers: {
-                        "Content-type": "application/json",
-                    },
-                });
-
-                return await response.json();
-        
-            } catch {
-
-                throw new Error("ERROR: Unable to execute request check if the URL is correct");
-            
+        const options: RequestInit = {
+            method: method,
+            headers: {
+                "Content-Type": "application/json"
             }
-        
-        } 
-        
-        if (apiMethod === "GET") {
+        };
 
-            try {
+        if (method == "POST") options.body = JSON.stringify(data);
+   
+        try {
 
-                const response = await fetch(apiURL, {
-                    method: apiMethod,
-                    headers: {
-                        "Content-type": "application/json",
-                    },
-                });
-                
-                return await response.json(); 
-        
-            } catch {
+            const response: Response = await fetch(url, options);
 
-                throw new Error("ERROR: Unable to execute request check if the URL is correct");
+            if (!response.ok) throw new Error(`HTTP ERROR: Status: ${response.status}`);
             
-            }
+            return await response.json();
+        
+        }
+
+        catch (error: any) {
+
+            throw new Error(error.message);
         
         }
 
     }
-
 
 }
