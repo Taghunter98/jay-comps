@@ -3,3 +3,11 @@ node_modules/
 
 # Ignore vscode workspace settings
 .vscode/
+
+# Jay stuff
+test.html
+test/
+test.css
+
+# TypeScript compiled JavaScript
+dist/
