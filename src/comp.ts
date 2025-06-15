@@ -6,7 +6,7 @@
  * Date:        08/06/2025
  * Version:     1.2
  * 
- * Description: Base Comp class that handles all Comp inner logic.
+ * Licence:     Apache 2.0
  */
 
 import { API } from './api.js';

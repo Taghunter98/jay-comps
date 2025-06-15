@@ -6,7 +6,7 @@
  * Date:        08/06/2025
  * Version:     1.0
  * 
- * Description: Base API class that handles all Comp HTTP request logic.
+ * Licence:     Apache 2.0
  */
 
 /**
@@ -18,7 +18,7 @@
  * Provides a method `request` to abstract from JavaScript's `fetch` API.
  * 
  * ### Methods:
- * - **request**: Makes a GET or POST HTTP request.
+ * - **request**(): Makes a GET or POST HTTP request.
  */
 export class API {
 

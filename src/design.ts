@@ -1,12 +1,12 @@
 /**
  * Copyright (c) 2025 Josh Bassett
  * 
- * Filename:    style.js
+ * Filename:    design.ts
  * Author:      Josh Bassett
  * Date:        09/06/2025
- * Version:     1.2
+ * Version:     1.3
  * 
- * Description: Base style class that compiles JavaScript into CSS.
+ * Licence:     Apache 2.0
  */
 
 import { Effects } from "./effects.js";
@@ -51,14 +51,11 @@ export class Design {
      * Method injects values:
      * - `root` values to ensure shadow DOM elements inherit correctly.
      * - Typograpgy styles modelled on Material design for accessibility.
-     * - Standard nimation library.
      * 
      * ### Returns:
      * `string` - Default CSS to be injected.
      */
     defaultComp() {
-
-        const effect = new Effects();
 
         return /* css */ `
         * {
@@ -110,17 +107,6 @@ export class Design {
             font-weight: 500;
             line-height: 16pt;
         }
-
-        ${effect.pulse()}
-        ${effect.scale(0, 20)}
-        ${effect.slideUp(20)}
-        ${effect.slideDown(-20)}
-        ${effect.fadeIn()}
-        ${effect.fadeOut()}
-        ${effect.fadeLeft(-20)}
-        ${effect.fadeRight(20)}
-        ${effect.fadeOutLeft(-20)}
-        ${effect.fadeOutRight(20)}
         `;
     
     }
