@@ -68,49 +68,15 @@ Note a known bug with the linter, you need to disable `editor.formatOnSave` to a
   "liveServer.settings.port": 5501
 }
 ```
-
-Your package.json needs somea additional dependencies for the linter.
-
-```json
- "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^8.34.0",
-    "@typescript-eslint/parser": "^8.34.0",
-    "eslint": "^9.28.0",
-    "eslint-plugin-align-assignments": "^1.1.2",
- }
+Install the dependencies.
+```plaintext
+npm install --save-dev jay-comp eslint eslint-plugin-align-assignments @typescript-eslint/eslint-plugin @typescript-eslint/parser globals
 ```
 
-Finally add the eslint.config.cjs to your root directory and reload the window.
-
-```cjs
-const globals = require("globals");
-const { defineConfig } = require("eslint/config");
-const alignAssignments = require("eslint-plugin-align-assignments");
-
-module.exports = defineConfig([
-    {
-        files: ["**/*.{js,jsx,ts,tsx}"],
-        languageOptions: {
-            parser: require("@typescript-eslint/parser"), 
-            globals: globals.browser,
-            ecmaVersion: "latest",
-            sourceType: "module"
-        },
-        plugins: {
-            "@typescript-eslint": require("@typescript-eslint/eslint-plugin"), 
-            "align-assignments": alignAssignments
-        },
-        rules: {
-            "@typescript-eslint/no-unused-vars": "warn", 
-            "align-assignments/align-assignments": "error",
-            "indent": ["error", 4],
-            "semi": ["error", "always"],
-            "padded-blocks": ["error", "always"],
-            "no-inline-comments": ["error", { "ignorePattern": "(html|css|style)" }],
-            "camelcase": "error"
-        }
-    },
-]);
+Finally extend the linter config to your `eslint.config.js`.
+```js
+import config from "jay-comp/eslint.config.js";
+export default config;
 ```
 
 ## Defining a Comp

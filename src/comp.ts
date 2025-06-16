@@ -326,7 +326,7 @@ export abstract class Comp extends HTMLElement {
      */
     abstract createCSS(): string;
 
-     /**
+    /**
      * ## Hook
 
      * Implements JavaScript logic within the component.
