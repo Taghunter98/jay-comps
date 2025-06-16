@@ -58,7 +58,7 @@
 export class Effects {
 
     /**
-     * ## prop
+     * ## Prop
      * 
      * Creates a CSS animation property.
      * 
@@ -94,7 +94,7 @@ export class Effects {
     }
 
     /**
-   * ## fadeIn
+   * ## Fade In
    * 
    * Provides an effect for fading in an element.
    * 
@@ -127,7 +127,7 @@ export class Effects {
     }
 
     /**
-   * ## fadeOut
+   * ## Fade Out
    * 
    * Provides an effect for fading out an element.
    * 
@@ -159,7 +159,7 @@ export class Effects {
     }
 
     /**
-   * ## fadeLeft
+   * ## Fade Left
    * 
    * Provides an effect for fading in an element from the left.
    * 
@@ -197,7 +197,7 @@ export class Effects {
     }
 
     /**
-   * ## fadeRight
+   * ## Fade Right
    * 
    * Provides an effect for fading in an element from the right.
    * 
@@ -235,7 +235,7 @@ export class Effects {
     }
 
     /**
-   * ## slideUp
+   * ## Slide Up
    * 
    * Provides an effect for sliding an element up into view.
    * 
@@ -273,7 +273,7 @@ export class Effects {
     }
 
     /**
-   * ## slideDown
+   * ## Slide Down
    * 
    * Provides an effect for sliding an element down into view.
    * 
@@ -311,7 +311,7 @@ export class Effects {
     }
 
     /**
-   * ## scale
+   * ## Scale
    * 
    * Provides an effect for scaling an element.
    * 
@@ -349,7 +349,7 @@ export class Effects {
     }
 
     /**
-   * ## pulse
+   * ## Pulse
    * 
    * Provides a pulsing effect for an element.
    * 
@@ -384,7 +384,7 @@ export class Effects {
     }
 
     /**
-   * ## fadeOutRight
+   * ## Fade Out Right
    * 
    * Provides an effect for fading out an element to the right.
    * 
@@ -422,7 +422,7 @@ export class Effects {
     }
 
     /**
-   * ## fadeOutLeft
+   * ## Fade Out Left
    * 
    * Provides an effect for fading out an element to the left.
    * 

@@ -43,7 +43,7 @@ export type CSSConfig = Record<string, CSSValue>;
 export class Design {
 
     /**
-     * ## defaultComp
+     * ## Default Comp
      * 
      * Injects basic Comp CSS.
      * 
@@ -112,72 +112,27 @@ export class Design {
     }
 
     /**
+     * ## Create
+     * 
      * Generates a CSS string from a configuration object.
-     *
+     * 
+     * ### Behaviour:
      * This method transforms a JavaScript object (with keys in camelCase)
      * into a CSS string, converting keys to kebab-case and ensuring the proper
      * conversion of British to American English for property names. Global CSS
      * variables may be referenced as <code>var(--example)</code>, and all colour
      * properties must be defined as CSS variables.
-     *
-     * **Example Usage:**
-     *
+     * 
+     * ### Parameters:
+     * - **css** (`CSSConfig`): A configuration object representing CSS properties and values.
+     * 
+     * ### Returns:
+     * `string` - The compiled CSS code.
+     * 
+     * ### Example:
      * ```js
      * 
-     * const cssConfig = {
-     *   valueID: "container",
-     *   psuedoClass: "hover",
-     *   display: "flex",
-     *   flexDirection: "column",
-     *   boxSizing: "border-box",
-     *   width: "100%",
-     *   maxWidth: 500,
-     *   padding: 20,
-     *   alignItems: "center",
-     *   border: true,
-     *   borderRadius: 10,
-     *   background: "white",
-     *   colour: "black100",
-     *   fontSize: 16,
-     *   fontWeight: 400,
-     *   opacity: 1
-     * };
-     * const cssCode = design.create(cssConfig);
-     * console.log(cssCode);
-     * ```
-     *
-     * @param {CSSConfig} css - A configuration object representing CSS properties and values.
-     * @returns {string} A compiled CSS string ready for injection.
-     */
-    public create(css: CSSConfig): string {
-
-        const cssSelector = css.psuedoClass
-            ? `${css.class}:${css.psuedoClass}`
-            : css.class;
-
-        return /* css */ `
-        .${cssSelector} {
-            ${this.compileCSS(css)}
-        }
-        `;
-    
-    }
-
-    /**
-     * Compiles a CSS configuration object into a valid CSS string.
-     *
-     * This method iterates over a CSS configuration object, performing necessary
-     * transformations such as:
-     * 
-     * - Converting camelCase keys to kebab-case.
-     * - Converting British English property names to American English.
-     * - Appending appropriate units (e.g. px, pt) to numerical values.
-     *
-     * **Example Usage:**
-     *
-     * ```js
-     * 
-     * const cssConfig = {
+     * const cssConfig = this.create{{
      *   class: "container",
      *   psuedoClass: "hover",
      *   display: "flex",
@@ -194,13 +149,41 @@ export class Design {
      *   fontSize: 16,
      *   fontWeight: 400,
      *   opacity: 1
-     * };
-     * const compiledCSS = design.compileCSS(cssConfig);
-     * console.log(compiledCSS);
+     * ));
      * ```
-     *
-     * @param {CSSConfig} css - An object containing CSS properties and values.
-     * @returns {string} The compiled CSS code.
+     */
+    public create(css: CSSConfig): string {
+
+        const cssSelector = css.psuedoClass
+            ? `${css.class}:${css.psuedoClass}`
+            : css.class;
+
+        return /* css */ `
+        .${cssSelector} {
+            ${this.compileCSS(css)}
+        }
+        `;
+    
+    }
+
+    /**
+     * ## Compile CSS
+     * 
+     * Compiles a CSS configuration object into a valid CSS string.
+     * 
+     * ### Behaviour:
+     * This method iterates over a CSS configuration object, performing necessary
+     * transformations such as:
+     * 
+     * - Converting camelCase keys to kebab-case.
+     * - Converting British English property names to American English.
+     * - Appending appropriate units (e.g. px, pt) to numerical values.
+     * 
+     * ### Parameters:
+     * - **css** (`CSSConfig`): A configuration object representing CSS properties and values.
+     * 
+     * ### Returns:
+     * `string` - The compiled CSS code.
      */
     private compileCSS(css: CSSConfig): string {
 
@@ -221,20 +204,6 @@ export class Design {
     
     }
 
-    /**
-     * Converts a camelCase string to kebab-case.
-     *
-     * This method transforms a JavaScript-style camelCase variable
-     * into a CSS-friendly kebab-case string.
-     *
-     * @param {string} variableName - The camelCase string to convert.
-     * @returns {string} The converted kebab-case string.
-     *
-     * @example
-     * const design = new Design();
-     * const cssVar = design.parseVariables('fontSizeLarge');
-     * // Returns 'font-size-large'
-     */
     /**
      * ## parseVariables
      * 

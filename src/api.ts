@@ -23,7 +23,7 @@
 export class API {
 
     /**
-     * ## request
+     * ## Request
      * 
      * Perfoms a GET or POST HTTP request.
      * 
@@ -62,7 +62,7 @@ export class API {
      * }
      * ```
      */
-    async request<T>(url: string, method: string, data?: Object): Promise<T> {
+    public async request<T>(url: string, method: string, data?: Object): Promise<T> {
 
         if (method != "POST" && method != "GET") {
 

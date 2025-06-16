@@ -149,7 +149,7 @@ export abstract class Comp extends HTMLElement {
     }
 
     /**
-     * ## createTemplate
+     * ## Create Template
      * 
      * Builds an HTML Element template string.
      * 
@@ -164,7 +164,7 @@ export abstract class Comp extends HTMLElement {
      * ### Returns:
      * `string` - Template string to be injected.
      */
-    createTemplate(html: string, css: string): string {
+    private createTemplate(html: string, css: string): string {
 
         return /* html */ `
       ${html}
@@ -177,7 +177,7 @@ export abstract class Comp extends HTMLElement {
     }
 
     /**
-     * ## debug
+     * ## Debug
      * 
      * Prints debug information to console.
      * 
@@ -191,7 +191,7 @@ export abstract class Comp extends HTMLElement {
      * this.debug()
      * ```
  */
-    debug(): void {
+    public debug(): void {
 
         console.log("DEBUG COMP: " + this.name);
         console.log(this.name);
@@ -223,7 +223,7 @@ export abstract class Comp extends HTMLElement {
      * }
      * ```
      */
-    render(): void {
+    public render(): void {
 
         if (!this.shadowRoot) {
 
@@ -240,7 +240,7 @@ export abstract class Comp extends HTMLElement {
     }
 
     /**
-     * # update
+     * # Update
      * 
      * Updates the Comp with new HTML/CSS.
      * 
@@ -272,12 +272,87 @@ export abstract class Comp extends HTMLElement {
     }
 
     /**
-     * Abstract methods to be overriden.
+     * ## Create HTML
+     * 
+     * Creates an HTML template string.
+     * 
+     * ### Behaviour:
+     * Abstract method that returns a template string with the Comp's inner HTML.
+     * 
+     * Method needs to be overridden per instance.
+     * 
+     * ### Example:
+     * ```js
+     * 
+     * createHTML() {
+     * 
+     *     return `<button>${this.text_}</button>`;
+     * 
+     * }
+     * ```
      */
     abstract createHTML(): string;
 
+    /**
+     * ## Create CSS
+     * 
+     * Creates an CSS template string.
+     * 
+     * ### Behaviour:
+     * Abstract method that returns a template string with the Comp's inner CSS.
+     * 
+     * Use the `Design` class `create` API to build the CSS and the `Effects` class
+     * `prop` API for addding effects.
+     * 
+     * Method needs to be overridden per instance.
+     * 
+     * ### Example:
+     * ```js
+     * 
+     * createCSS() {
+     *         
+     *     const style = this.design.create({
+     *         class: "hello",
+     *         background: "black100",
+     *         colour: "white",
+     *         padding: 10,
+     *         borderRadius: 8
+     *     });
+     * 
+     *     return `${style}`;
+     * 
+     * }
+     * ```
+     */
     abstract createCSS(): string;
 
+     /**
+     * ## Hook
+
+     * Implements JavaScript logic within the component.
+     * 
+     * ### Behaviour:
+     * Abstract method that implements the inner Javascript logic to be executed when the Comp
+     * is rendered.
+     * 
+     * To select elements from the Comp, use `this.shadowRoot` as all Comps are built using the Shadow DOM.
+     * 
+     * Method needs to be overridden per instance.
+     * 
+     * ### Example:
+     * ```js
+     * 
+     *hook() {
+     * 
+     *     this.shadowRoot
+     *         .querySelector('button')
+     *         .addEventListener("click", () => {
+     *             console.log(this.hello_);
+     *     });
+     * 
+     * }
+     * ```
+     */
     abstract hook(): void;
 
 }
