@@ -1,10 +1,11 @@
 {
-  "name": "jay-comps",
+  "name": "jay-comp",
   "version": "1.0.0",
   "description": "Jay is a lean and lightweight framework that puts the control and creativity of traditional web development with modular and scalable component architecture.",
   "main": "src/comp.js",
   "scripts": {
     "test": "echo \\\"Error: no test specified\\\" && exit 1",
+    "jay": "cd node_modules/jay-comp \\ npm install \\ npx tsc",
     "format": "eslint --fix \"src/**/*.{js,jsx,ts,tsx}\""
   },
   "repository": {
@@ -12,10 +13,6 @@
     "url": "git+https://github.com/Taghunter98/jay-comps.git"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^8.34.0",
-    "@typescript-eslint/parser": "^8.34.0",
-    "eslint": "^9.28.0",
-    "eslint-plugin-align-assignments": "^1.1.2",
     "ts-loader": "^9.5.2",
     "typescript": "^5.8.3",
     "webpack": "^5.99.9",
