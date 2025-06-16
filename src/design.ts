@@ -9,15 +9,13 @@
  * Licence:     Apache 2.0
  */
 
-import { Effects } from "./effects.js";
-
 export type CSSValue = string | number | boolean | null | undefined;
 export type CSSConfig = Record<string, CSSValue>;
 
 /**
  * # Design
  * 
- * Class that compiles JavaScript -> CSS.
+ * Class that compiles JavaScript → CSS.
  * 
  * ### Overview:
  * This class serves as the compiler for converting JavaScript into valid CSS.
@@ -26,12 +24,11 @@ export type CSSConfig = Record<string, CSSValue>;
  * developer to write their CSS, but with the luxury of JavaScript Record notation.
  * 
  * ### Methods:
- * - **create**(): Public API for the developer to write CSS.
- * - **compileCSS**(): Compiler for CSS.
- * - **parseVariables**(): Converts camel case variables to kebab case.
- * - **check**(): Returns px value.
- * - **compileCSS**(): Compiler for CSS.
- * - **compileCSS**(): Compiler for CSS.
+ * - **create()**: Public API for the developer to write CSS.
+ * - **compileCSS()**: Compiler for CSS.
+ * - **parseVariables()**: Converts camel case variables to kebab case.
+ * - **check()**: Returns px value.
+ * - **americanise()**: Converts British to American property names.
  * 
  * ### Example:
  * ```js
@@ -50,7 +47,7 @@ export class Design {
      * ### Behaviour:
      * Method injects values:
      * - `root` values to ensure shadow DOM elements inherit correctly.
-     * - Typograpgy styles modelled on Material design for accessibility.
+     * - Typography styles modelled on Material Design for accessibility.
      * 
      * ### Returns:
      * `string` - Default CSS to be injected.
@@ -132,9 +129,9 @@ export class Design {
      * ### Example:
      * ```js
      * 
-     * const cssConfig = this.create{{
+     * const cssConfig = this.create({
      *   class: "container",
-     *   psuedoClass: "hover",
+     *   pseudoClass: "hover",
      *   display: "flex",
      *   flexDirection: "column",
      *   boxSizing: "border-box",
@@ -149,13 +146,13 @@ export class Design {
      *   fontSize: 16,
      *   fontWeight: 400,
      *   opacity: 1
-     * ));
+     * });
      * ```
      */
     public create(css: CSSConfig): string {
 
-        const cssSelector = css.psuedoClass
-            ? `${css.class}:${css.psuedoClass}`
+        const cssSelector = css.pseudoClass
+            ? `${css.class}:${css.pseudoClass}`
             : css.class;
 
         return /* css */ `
@@ -207,10 +204,10 @@ export class Design {
     /**
      * ## parseVariables
      * 
-     * Coverts a camel case variable to kebab case.
+     * Converts a camel case variable to kebab case.
      * 
      * ### Behaviour:
-     * Method uses a regex to split the variable up to capital letters and add a -.
+     * Method uses a regex to split the variable up at capital letters and add a hyphen.
      * 
      * ### Parameters:
      * - **variable** (`string`): Camel case variable.
@@ -239,10 +236,10 @@ export class Design {
     /**
      * ## americanise
      * 
-     * Converts British -> American CSS property names.
+     * Converts British → American CSS property names.
      * 
      * ### Behaviour:
-     * Method matches CSS property names that are spelt using American English.
+     * Method matches CSS property names that are spelt using British English and converts them to American English.
      * 
      * This allows for CSS to be written in British English.
      * 
@@ -281,15 +278,15 @@ export class Design {
     /**
      * ## check
      * 
-     * Runs checks to compile variabe types.
+     * Runs checks to compile variable types.
      * 
      * ### Behaviour:
      * Method takes the key and value of the CSSConfig and checks for conditions to compile
      * the correct variable types.
      * 
      * ### Parameters:
-     * - **key** (`string`): The key e.g. (class, fontSize, background).
-     * - **value** (`CSSValue`): The value e.g. ("classname", 100pt, var(--black100)).
+     * - **key** (`string`): The key, e.g. (class, fontSize, background).
+     * - **value** (`CSSValue`): The value, e.g. ("classname", 100, var(--black100)).
      * 
      * ### Returns:
      * `string` | `CSSValue` - Valid CSS value.
@@ -304,14 +301,14 @@ export class Design {
      * ```
      * ```plaintext
      * 
-     * 200pt
+     * 200px
      * ```
      */
-    private check(key: String, value: CSSValue): string | CSSValue {
+    private check(key: string, value: CSSValue): string | CSSValue {
 
-        if (key == "fontSize" && typeof value == 'number') return `${value}px`;
-        else if (key == "opacity" || key == "fontWeight" && typeof value == 'number') return value;
-        else if (typeof value == 'number') return`${value}px`;
+        if (key === "fontSize" && typeof value === 'number') return `${value}px`;
+        else if ((key === "opacity" || key === "fontWeight") && typeof value === 'number') return value;
+        else if (typeof value === 'number') return `${value}px`;
         else if (key === "background" || key === "colour" || key === "border") return `var(--${value})`;
         else return value;
     

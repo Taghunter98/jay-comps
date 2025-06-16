@@ -2,12 +2,11 @@
 
 Jay is a lightweight, modular web component library built with TypeScript. It provides everything you need to build maintainable custom elements.
 
-Jay is built on 'Comps', modualar HTML elements that uss the Shadow DOM to keep the logic and styling tidy. Jay allows you to ignore the rendering and focus on the design and logic through some nice features that give vanilla JS a real boost.
+Jay is built on 'Comps', modualar HTML elements that usss the Shadow DOM to keep the logic and styling tidy. Jay allows you to ignore the rendering and focus on the design and logic through some nice features that give vanilla JS a real boost.
 
 Writing CSS is a breeze, I decided to write a custom CSS compiler that converts JavaScript objects into CSS styles, with camel case support for variable names, but the cool thing is, the conversion of British to American spellings for CSS properties. This for me at least is really nice no more 'color'!
 
-Jay comes with a linter with it's own conventions ensuring aligned assignments, function spacing, a 4-space indentation style, camelCase usage, and semicolon enforcement.
-
+Jay also comes with a linter with it's own conventions to help you write cleaner and maintainable code.
 ## Features
 
 - **Comp System:**  
@@ -26,28 +25,29 @@ Jay comes with a linter with it's own conventions ensuring aligned assignments, 
   - 4-space indentation
   - Camel case usage
   - Semicolon enforcement  
-  These conventions help maintain a clean and consistent codebase across the project.
 
 ### Installation
 To install Jay you can use npm or git clone the repository.
 
-After installing, you need to compile the TypeScript files with `tsc` or `npm run jay`.
+After installing, you need to compile the TypeScript files with `tsc` or `npx tsc`.
 
 The JavaScript `Comp` file is found within `/dist/comp.js` post compilation. 
 
 - **npm**
     ```sh
     npm install jay-comp
-    npm run jay # Or tsc if installed globally
     ```
 
 - **git**
     ```sh
     git clone https://github.com/Taghunter98/jay-comps.git
     cd jay-comps
-    npm install
-    npm run jay # Or tsc if installed globally
     ```
+
+Install the dependencies.
+```plaintext
+npm install --save-dev jay-comp eslint eslint-plugin-align-assignments @typescript-eslint/eslint-plugin @typescript-eslint/parser globals
+```
 
 ### Configuring the Linter
 The linter, if you are running VSCode, needs an additional workspace requirement, add a `.vscode` directory with `settings.json` and pase the following settings. Reload the workspace and Jay will start shouting at you!
@@ -67,11 +67,6 @@ Note a known bug with the linter, you need to disable `editor.formatOnSave` to a
   ],
   "liveServer.settings.port": 5501
 }
-```
-Install the dependencies.
-```plaintext
-npm install --save-dev jay-comp eslint eslint-plugin-align-assignments @typescript-eslint/eslint-plugin @typescript-eslint/parser globals
-```
 
 Finally extend the linter config to your `eslint.config.js`.
 ```js
@@ -276,7 +271,7 @@ createHTML() {
 }
 ```
 
-### Contribution and Licencing
+### Contribution and Licence
 Jay is licenced under the Apache 2.0 licence, so feel free to use it within your projects and any suggestions or bugs please create an issue or send me an email :)
 
 To contribute pleas fork the repo and make a pull request, I'll be happy to review and merge your suggestions and new features.

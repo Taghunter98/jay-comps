@@ -112,7 +112,7 @@ export abstract class Comp extends HTMLElement {
     
     }
 
-    // Getter and setter for component name
+    // Getter and setter for Comp name
     public set name(newCompName: string) {
 
         this.name_ = newCompName;
@@ -124,7 +124,7 @@ export abstract class Comp extends HTMLElement {
     
     }
 
-    // Getter and setter for component HTML
+    // Getter and setter for Comp HTML
     public set html(newCompHTML: string) {
 
         this.html_ = newCompHTML;
@@ -136,7 +136,7 @@ export abstract class Comp extends HTMLElement {
     
     }
 
-    // Getter and setter for component CSS
+    // Getter and setter for Comp CSS
     public set css(newCompCSS: string) {
 
         this.css_ = newCompCSS;
@@ -158,8 +158,8 @@ export abstract class Comp extends HTMLElement {
      * injected into a template string.
      * 
      * ### Parameters:
-     * - **html** (`string`): The html to be rendered.
-     * - **css** (`string`): The css to be rendered.
+     * - **html** (`string`): The HTML to be rendered.
+     * - **css** (`string`): The CSS to be rendered.
      * 
      * ### Returns:
      * `string` - Template string to be injected.
@@ -179,7 +179,7 @@ export abstract class Comp extends HTMLElement {
     /**
      * ## Debug
      * 
-     * Prints debug information to console.
+     * Prints debug information to the console.
      * 
      * ### Behaviour:
      * The method prints out the Comp `name`, `html_` and `css_` attributes to the console for
@@ -190,7 +190,7 @@ export abstract class Comp extends HTMLElement {
      * 
      * this.debug()
      * ```
- */
+     */
     public debug(): void {
 
         console.log("DEBUG COMP: " + this.name);
@@ -208,7 +208,7 @@ export abstract class Comp extends HTMLElement {
      * ### Behaviour:
      * Method renders the Comp by setting the Shadow DOM's innerHTML to the generated template.
      * 
-     * If a hook (an internal build method) is defined, it will be invoked afterward.
+     * If a hook (an internal build method) is defined, it will be invoked afterwards.
      * 
      * ### Example:
      * ```js
@@ -296,13 +296,13 @@ export abstract class Comp extends HTMLElement {
     /**
      * ## Create CSS
      * 
-     * Creates an CSS template string.
+     * Creates a CSS template string.
      * 
      * ### Behaviour:
      * Abstract method that returns a template string with the Comp's inner CSS.
      * 
      * Use the `Design` class `create` API to build the CSS and the `Effects` class
-     * `prop` API for addding effects.
+     * `prop` API for adding effects.
      * 
      * Method needs to be overridden per instance.
      * 
@@ -332,7 +332,7 @@ export abstract class Comp extends HTMLElement {
      * Implements JavaScript logic within the component.
      * 
      * ### Behaviour:
-     * Abstract method that implements the inner Javascript logic to be executed when the Comp
+     * Abstract method that implements the inner JavaScript logic to be executed when the Comp
      * is rendered.
      * 
      * To select elements from the Comp, use `this.shadowRoot` as all Comps are built using the Shadow DOM.
@@ -342,7 +342,7 @@ export abstract class Comp extends HTMLElement {
      * ### Example:
      * ```js
      * 
-     *hook() {
+     * hook() {
      * 
      *     this.shadowRoot
      *         .querySelector('button')
