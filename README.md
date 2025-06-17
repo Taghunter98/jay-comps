@@ -46,7 +46,28 @@ The JavaScript `Comp` file is found within `/dist/comp.js` post compilation.
 
 Install the dependencies.
 ```plaintext
-npm install --save-dev jay-comp eslint eslint-plugin-align-assignments @typescript-eslint/eslint-plugin @typescript-eslint/parser globals
+npm install --save-dev jay-comp eslint eslint-plugin-align-assignments @typescript-eslint/eslint-plugin @typescript-eslint/parser globals webpack webpack-cli
+```
+#### Build with Webpack if using npm
+For Jay to work with npm, you need Webpack and ensure that your `package.json` is set to `type: module`.
+
+Then define the central import file for your project, I just use `index.js`. Inside import the main `Comp` class from npm modules, then all your custom Comps. This is to ensure that it will work with HTML.
+
+```cjs
+const path = require('path');
+module.exports = {
+    entry: "<PATH_TO_INDEX.JS>",
+    mode: 'development',
+    output: {
+        filename: 'bundle.js',
+        path: path.resolve(_dirname, 'dist')
+    }
+};
+```
+
+This will generate a `dist/bundle.js` directory that you can then link your HTML to and use Jay.
+```html
+<script type="module" src="<PATH_TO_DIST>/dist/bundle.js"></script>
 ```
 
 ### Configuring the Linter
