@@ -151,9 +151,7 @@ export class Design {
      */
     public create(css: CSSConfig): string {
 
-        const cssSelector = css.pseudoClass
-            ? `${css.class}:${css.pseudoClass}`
-            : css.class;
+        let cssSelector = (css.psuedoClass) ? `${css.class}:${css.psuedoClass}` : css.class;
 
         return /* css */ `
         .${cssSelector} {
