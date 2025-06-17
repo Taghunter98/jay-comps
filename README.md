@@ -65,9 +65,9 @@ Note a known bug with the linter, you need to disable `editor.formatOnSave` to a
 }
 ```
 
-Finally extend the linter config to your `eslint.config.js`.
+Ensure that your `package.json` type is set to `module`, create an eslint config and extend the linter config to your `eslint.config.js`.
 ```js
-import config from "jay-comp/eslint.config.js";
+import config from "./jay-comp/eslint.config.js";
 export default config;
 ```
 
