@@ -46,7 +46,12 @@ The JavaScript `Comp` file is found within `/dist/comp.js` post compilation.
 
 Install the dependencies.
 ```plaintext
-npm install --save-dev jay-comp eslint eslint-plugin-align-assignments @typescript-eslint/eslint-plugin @typescript-eslint/parser globals
+npm install --save-dev eslint eslint-plugin-align-assignments @typescript-eslint/eslint-plugin @typescript-eslint/parser globals vite
+```
+
+You will also need to use vite to configure the exports, simply run:
+```plaintext
+npm run jay
 ```
 
 ### Configuring the Linter

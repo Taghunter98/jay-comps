@@ -39,7 +39,8 @@
     "eslint.config.js"
   ],
   "exports": {
-    ".": "./dist/comp.js"
+    ".": "./dist/comp.js",
+    "./eslint.config.js": "./eslint.config.js"
   },
   "author": "Josh Bassett",
   "license": "Apache-2.0",
