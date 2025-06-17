@@ -27,26 +27,22 @@ Jay also comes with a linter with it's own conventions to help you write cleaner
   - Semicolon enforcement  
 
 ### Installation
-To install Jay you can use npm or git clone the repository.
+To install Jay, git clone the repository.
 
 After installing, you need to compile the TypeScript files with `tsc` or `npx tsc`.
 
 The JavaScript `Comp` file is found within `/dist/comp.js` post compilation. 
 
-- **npm**
-    ```sh
-    npm install jay-comp
-    ```
 
-- **git**
-    ```sh
-    git clone https://github.com/Taghunter98/jay-comps.git
-    cd jay-comps
-    ```
+```sh
+git clone https://github.com/Taghunter98/jay-comps.git
+cd jay-comps
+tsc
+```
 
-Install the dependencies.
+Install the dependencies if you want to use the Linter.
 ```plaintext
-npm install --save-dev jay-comp eslint eslint-plugin-align-assignments @typescript-eslint/eslint-plugin @typescript-eslint/parser globals
+npm install --save-dev eslint eslint-plugin-align-assignments @typescript-eslint/eslint-plugin @typescript-eslint/parser globals
 ```
 
 ### Configuring the Linter
