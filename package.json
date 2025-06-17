@@ -6,6 +6,7 @@
   "scripts": {
     "test": "echo \\\"Error: no test specified\\\" && exit 1",
     "build": "tsc",
+    "jay": "npx vite",
     "format": "eslint --fix \"src/**/*.{js,jsx,ts,tsx}\""
   },
   "repository": {
@@ -25,7 +26,7 @@
     "eslint": "^9.29.0",
     "eslint-plugin-align-assignments": "^1.1.2",
     "globals": "^16.2.0",
-    "jay-comp": "^1.2.0",
+    "jay-comp": "^2.0.1",
     "ts-loader": "^9.5.2",
     "typescript": "^5.8.3",
     "webpack": "^5.99.9",
@@ -38,10 +39,21 @@
     "TypeScript",
     "components"
   ],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+  ".": "./dist/comp.js"
+  },
   "author": "Josh Bassett",
   "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/Taghunter98/jay-comps/issues"
   },
-  "homepage": "https://github.com/Taghunter98/jay-comps#readme"
+  "homepage": "https://github.com/Taghunter98/jay-comps#readme",
+  "dependencies": {
+    "vite": "^6.3.5"
+  }
 }
