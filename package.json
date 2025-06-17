@@ -35,7 +35,8 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "eslint.config.js"
   ],
   "exports": {
     ".": "./dist/comp.js"
