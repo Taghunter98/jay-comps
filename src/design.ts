@@ -190,6 +190,8 @@ export class Design {
 
             let cssValue: CSSValue = css[key];
 
+            if (key === "class" || key == "pseudoClass") continue;
+
             cssValue = this.check(key, cssValue);
             key      = this.parseVariables(key);
             
