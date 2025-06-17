@@ -151,7 +151,9 @@ export class Design {
      */
     public create(css: CSSConfig): string {
 
-        let cssSelector = (css.psuedoClass) ? `${css.class}:${css.psuedoClass}` : css.class;
+        const cssSelector = css.pseudoClass
+            ? `${css.class}:${css.pseudoClass}`
+            : css.class;
 
         return /* css */ `
         .${cssSelector} {
@@ -187,8 +189,6 @@ export class Design {
         for (let key in css) {
 
             let cssValue: CSSValue = css[key];
-
-            if (key === "class" || key == "pseudoClass") continue;
 
             cssValue = this.check(key, cssValue);
             key      = this.parseVariables(key);

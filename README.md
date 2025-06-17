@@ -26,24 +26,61 @@ Jay also comes with a linter with it's own conventions to help you write cleaner
   - Camel case usage
   - Semicolon enforcement  
 
-### Installation
-To install Jay, git clone the repository.
+## Installation
+To install Jay you can use npm or git clone the repository.
 
-After installing, you need to compile the TypeScript files with `tsc` or `npx tsc`.
+After cloning from git, you will need to compile the TypeScript files with `tsc` or `npx tsc`.
 
 The JavaScript `Comp` file is found within `/dist/comp.js` post compilation. 
 
+- **npm**
+    ```sh
+    npm install jay-comp
+    ```
 
-```sh
-git clone https://github.com/Taghunter98/jay-comps.git
-cd jay-comps
-tsc
-```
+- **git**
+    ```sh
+    git clone https://github.com/Taghunter98/jay-comps.git
+    cd jay-comps
+    ```
 
-Install the dependencies if you want to use the Linter.
+Install the dependencies.
 ```plaintext
-npm install --save-dev eslint eslint-plugin-align-assignments @typescript-eslint/eslint-plugin @typescript-eslint/parser globals
+npm install --save-dev jay-comp eslint eslint-plugin-align-assignments @typescript-eslint/eslint-plugin @typescript-eslint/parser globals webpack webpack-cli
 ```
+### Build with Webpack if using npm
+For Jay to work with npm, you need Webpack and ensure that your `package.json` is set to `type: module`.
+
+Then define the central import file for your project, I just use `index.js`. Inside, import the main `Comp` class from npm modules, then all your custom Comps. This is to ensure that it will work with HTML.
+```js
+import { Comp } from 'jay-comp';
+
+// Import your custom Comps
+import './button.js';
+import './input.js';
+import './card.js';
+```
+Then setup a `webpack.config.cjs` file, this is a simple example, just ensure that path to your `index.js` is correct.
+
+Run `npx webpack` or a build script if you have one configured.
+```cjs
+const path = require('path');
+module.exports = {
+    entry: "<PATH_TO_INDEX.JS>",
+    mode: 'development',
+    output: {
+        filename: 'bundle.js',
+        path: path.resolve(_dirname, 'dist')
+    }
+};
+```
+
+This will generate a `dist/bundle.js` directory that you can then link your HTML to and use Jay.
+```html
+<script type="module" src="<PATH_TO_DIST>/dist/bundle.js"></script>
+```
+
+_Note if you have issues, double check your pathing and that your project is setup as a module rather than common JS._
 
 ### Configuring the Linter
 The linter, if you are running VSCode, needs an additional workspace requirement, add a `.vscode` directory with `settings.json` and pase the following settings. Reload the workspace and Jay will start shouting at you!
@@ -63,11 +100,10 @@ Note a known bug with the linter, you need to disable `editor.formatOnSave` to a
   ],
   "liveServer.settings.port": 5501
 }
-```
 
-Ensure that your `package.json` type is set to `module`, create an eslint config and extend the linter config to your `eslint.config.js`.
+Finally extend the linter config to your `eslint.config.js`.
 ```js
-import config from "./jay-comp/eslint.config.js";
+import config from "jay-comp/eslint.config.js";
 export default config;
 ```
 

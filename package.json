@@ -1,58 +1,47 @@
 {
   "name": "jay-comp",
-  "version": "1.3.2",
+  "version": "1.3.0",
   "description": "Jay is a lean and lightweight framework that puts the control and creativity of traditional web development with modular and scalable component architecture.",
-  "main": "dist/comp.js",
-  "types": "dist/comp.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/comp.js",
-      "require": "./dist/comp.js",
-      "types": "./dist/comp.d.ts"
-    },
-    "./eslint.config.js": "./eslint.config.js"
-  },
+  "main": "src/comp.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "echo \\\"Error: no test specified\\\" && exit 1",
     "build": "tsc",
-    "dev": "npx vite",
     "format": "eslint --fix \"src/**/*.{js,jsx,ts,tsx}\""
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Taghunter98/jay-comps.git"
   },
-  "keywords": [
-    "framework",
-    "JavaScript",
-    "TypeScript",
-    "components",
-    "web-components"
-  ],
-  "author": "Josh Bassett",
-  "license": "Apache-2.0",
-  "bugs": {
-    "url": "https://github.com/Taghunter98/jay-comps/issues"
+  "peerDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.34.1",
+    "@typescript-eslint/parser": "^8.34.1",
+    "eslint": "^9.0.0",
+    "eslint-plugin-align-assignments": "^1.1.2",
+    "globals": "^16.2.0"
   },
-  "homepage": "https://github.com/Taghunter98/jay-comps#readme",
-  "type": "module",
-  "files": [
-    "dist",
-    "eslint.config.js",
-    "README.md",
-    "LICENSE"
-  ],
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.34.1",
     "@typescript-eslint/parser": "^8.34.1",
     "eslint": "^9.29.0",
     "eslint-plugin-align-assignments": "^1.1.2",
     "globals": "^16.2.0",
+    "jay-comp": "^1.2.0",
     "ts-loader": "^9.5.2",
     "typescript": "^5.8.3",
-    "vite": "^6.3.5",
     "webpack": "^5.99.9",
     "webpack-cli": "^6.0.1"
   },
-  "dependencies": {}
+  "type": "module",
+  "keywords": [
+    "framework",
+    "JavaScript",
+    "TypeScript",
+    "components"
+  ],
+  "author": "Josh Bassett",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Taghunter98/jay-comps/issues"
+  },
+  "homepage": "https://github.com/Taghunter98/jay-comps#readme"
 }
