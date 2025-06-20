@@ -12,6 +12,12 @@
     "type": "git",
     "url": "git+https://github.com/Taghunter98/jay-comps.git"
   },
+  "files": [
+    "dist",
+    "eslint.config.js",
+    "package.json",
+    "README.md"
+  ],
   "peerDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.34.1",
     "@typescript-eslint/parser": "^8.34.1",
