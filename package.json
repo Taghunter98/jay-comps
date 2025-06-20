@@ -12,6 +12,9 @@
     "type": "git",
     "url": "git+https://github.com/Taghunter98/jay-comps.git"
   },
+  "exports": {
+    ".": "./dist/comp.js"
+  },
   "files": [
     "dist",
     "eslint.config.js",
