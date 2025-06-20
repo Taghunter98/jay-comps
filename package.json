@@ -1,6 +1,6 @@
 {
   "name": "jay-comp",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Jay is a lean and lightweight framework that puts the control and creativity of traditional web development with modular and scalable component architecture.",
   "main": "src/comp.js",
   "scripts": {
