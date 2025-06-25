@@ -100,6 +100,7 @@ Note a known bug with the linter, you need to disable `editor.formatOnSave` to a
   ],
   "liveServer.settings.port": 5501
 }
+```
 
 Finally extend the linter config to your `eslint.config.js`.
 ```js
