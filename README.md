@@ -2,9 +2,9 @@
 
 Jay is a lightweight, modular web component library built with TypeScript. It provides everything you need to build maintainable custom elements.
 
-Jay is built on 'Comps', modualar HTML elements that usss the Shadow DOM to keep the logic and styling tidy. Jay allows you to ignore the rendering and focus on the design and logic through some nice features that give vanilla JS a real boost.
+Jay is built on 'Comps', modular HTML elements that uss the Shadow DOM to keep the logic and styling tidy. Jay allows you to ignore the rendering and focus on the design and logic through some nice features that give vanilla JS a real boost.
 
-Writing CSS is a breeze, I decided to write a custom CSS compiler that converts JavaScript objects into CSS styles, with camel case support for variable names, but the cool thing is, the conversion of British to American spellings for CSS properties. This for me at least is really nice no more 'color'!
+Writing CSS now feels intuitive, with a custom CSS compiler that converts JavaScript objects into CSS styles, providing camel case support for variable names, and the conversion of British to American spellings for CSS properties. This for me at least is really nice no more 'color'!
 
 Jay also comes with a linter with it's own conventions to help you write cleaner and maintainable code.
 ## Features
