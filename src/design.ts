@@ -235,7 +235,7 @@ export class Design {
     private check(key: string, value: CSSValue): string | CSSValue {
 
         if (typeof value === 'number') return this.checkInteger(key, value);
-        else if (Array.isArray(value)) return this.handleArrays(key, value);
+        else if (Array.isArray(value)) return this.convertArrays(key, value);
         else if (key === "background" || key === "colour" || key === "border") return `var(--${value})`;
         else return value;
     
@@ -342,7 +342,34 @@ export class Design {
     
     }
 
-    private handleArrays(key: string, values: Array<number>): string {
+    /**
+     * ## Convert Arrays
+     * Handles Array types for converting one line css values.
+     * 
+     * ### Parameters:
+     * - **key** (`string`): CSS property key
+     * - **values** (`Array<number>`): CSS values
+     * 
+     * ### Returns:
+     * `string` - Valid CSS property
+     * 
+     * ### Example:
+     * ```js
+     * 
+     * create({
+     *     class: "item",
+     *     padding: [25, 50, 75, 100] // top, right, bottom, left     
+     * });
+     * ```
+     * This compiles to:
+     * 
+     * ```css
+     * .item {
+     *     padding: 25px 50px 75px 100px;
+     * }
+     * ```
+     */
+    private convertArrays(key: string, values: Array<number>): string {
 
         let cssStr: string = '';
         
@@ -352,15 +379,32 @@ export class Design {
     
     }
 
+    /**
+     * ## Is Percent
+     * Checks if CSS key is a percent value.
+     * 
+     * ### Parameters
+     * - **key** (`string`): CSS property key
+     * 
+     * ### Return
+     * `string` - Valid CSS property
+     * 
+     * ### Example
+     * ```js
+     * 
+     * const key = "widthPer"
+     * const valid = isPercent(key)
+     * ```
+     */
     private isPercent(key: string): boolean {
 
-        return key.match(/Perc/) ? true : false;
+        return key.match(/Percent/) ? true : false;
     
     }
 
     private convertPercent(key: string): string {
 
-        return key.replace(/Perc/g, '').toLowerCase();
+        return key.replace(/Percent/g, '').toLowerCase();
     
     }
 
