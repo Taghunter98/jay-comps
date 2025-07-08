@@ -9,7 +9,7 @@
  * Licence:     Apache 2.0
  */
 
-export type CSSValue = string | number | boolean | null | undefined;
+export type CSSValue = string | number | boolean | null | Array<number> | undefined;
 export type CSSConfig = Record<string, CSSValue>;
 
 /**
@@ -151,7 +151,7 @@ export class Design {
      */
     public create(css: CSSConfig): string {
 
-        let cssSelector = (css.psuedoClass) ? `${css.class}:${css.psuedoClass}` : css.class;
+        let cssSelector = (css.pseudoClass) ? `${css.class}:${css.pseudoClass}` : css.class;
 
         return /* css */ `
         .${cssSelector} {
@@ -191,13 +191,80 @@ export class Design {
             if (key === "class" || key == "psuedoClass") continue;
             
             cssValue = this.check(key, cssValue);
-            key      = this.parseVariables(key);
+            
+            this.isPercent(key) ? key = this.convertPercent(key) : key;
+            key = this.parseVariables(key);
             
             cssString += `${this.americanise(key)}: ${this.americanise(cssValue)};\n`;
         
         }
 
         return cssString;
+    
+    }
+
+    /**
+     * ## check
+     * 
+     * Runs checks to compile variable types.
+     * 
+     * ### Behaviour:
+     * Method takes the key and value of the CSSConfig and checks for conditions to compile
+     * the correct variable types.
+     * 
+     * ### Parameters:
+     * - **key** (`string`): The key, e.g. (class, fontSize, background).
+     * - **value** (`CSSValue`): The value, e.g. ("classname", 100, var(--black100)).
+     * 
+     * ### Returns:
+     * `string` | `CSSValue` - Valid CSS value.
+     * 
+     * ### Example:
+     * ```js
+     * 
+     * const key = "fontSize";
+     * const val = 200;
+     * const css = check(key, val);
+     * console.log(css);
+     * ```
+     * ```plaintext
+     * 
+     * 200px
+     * ```
+     */
+    private check(key: string, value: CSSValue): string | CSSValue {
+
+        if (typeof value === 'number') return this.checkInteger(key, value);
+        else if (Array.isArray(value)) return this.handleArrays(key, value);
+        else if (key === "background" || key === "colour" || key === "border") return `var(--${value})`;
+        else return value;
+    
+    }
+
+    private checkInteger(key: string, value: number): string | CSSValue {
+
+        if (value === 0) return 0;
+        if (this.isPercent(key)) return `${value}%`;
+        switch (key) {
+
+        case "opacity": 
+        case "fontWeight": 
+        case "top": 
+        case "bottom": 
+        case "left": 
+        case "right":
+        case "lineHeight": 
+        case "zIndex":
+        case "flexGrow":
+        case "flexShrink":
+        case "order":
+        case "aspectRatio":
+
+            return value;
+        
+        }
+        
+        return `${value}px`;
     
     }
 
@@ -227,9 +294,9 @@ export class Design {
      * fontSize -> font-size
      * ```
      */
-    private parseVariables(variable: string) {
+    private parseVariables(key: string) {
 
-        return variable.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+        return key.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
     
     }
 
@@ -275,42 +342,25 @@ export class Design {
     
     }
 
-    /**
-     * ## check
-     * 
-     * Runs checks to compile variable types.
-     * 
-     * ### Behaviour:
-     * Method takes the key and value of the CSSConfig and checks for conditions to compile
-     * the correct variable types.
-     * 
-     * ### Parameters:
-     * - **key** (`string`): The key, e.g. (class, fontSize, background).
-     * - **value** (`CSSValue`): The value, e.g. ("classname", 100, var(--black100)).
-     * 
-     * ### Returns:
-     * `string` | `CSSValue` - Valid CSS value.
-     * 
-     * ### Example:
-     * ```js
-     * 
-     * const key = "fontSize";
-     * const val = 200;
-     * const css = check(key, val);
-     * console.log(css);
-     * ```
-     * ```plaintext
-     * 
-     * 200px
-     * ```
-     */
-    private check(key: string, value: CSSValue): string | CSSValue {
+    private handleArrays(key: string, values: Array<number>): string {
 
-        if (key === "fontSize" && typeof value === 'number') return `${value}px`;
-        else if ((key === "opacity" || key === "fontWeight") && typeof value === 'number') return value;
-        else if (typeof value === 'number') return `${value}px`;
-        else if (key === "background" || key === "colour" || key === "border") return `var(--${value})`;
-        else return value;
+        let cssStr: string = '';
+        
+        for (let val in values ) cssStr += (this.checkInteger(key, values[val]) + " ");
+
+        return cssStr;
+    
+    }
+
+    private isPercent(key: string): boolean {
+
+        return key.match(/Perc/) ? true : false;
+    
+    }
+
+    private convertPercent(key: string): string {
+
+        return key.replace(/Perc/g, '').toLowerCase();
     
     }
 
