@@ -24,7 +24,7 @@ export class ButtonComp extends Comp {
     // First define HTML markup
     createHTML() {
 
-        return `<button id="btn" class="btn">${this.text_}</button>`;
+        return `<button id="btn" class="btn">${this.text}</button>`;
     
     }
 
