@@ -90,7 +90,7 @@ import { Effects } from "./effects.js";
  */
 export abstract class Comp extends HTMLElement {
 
-    public api = new API();
+    private api = new API();
     public effect = new Effects();
     private design = new Design();
 
@@ -282,7 +282,117 @@ export abstract class Comp extends HTMLElement {
     * 
     */
     public css(css: CSSConfig): string { return this.design.create(css);}
+
+    /**
+     * ## request
+     *
+     * Performs an HTTP GET or POST and returns the parsed JSON body.
+     *
+     * ### Behaviour
+     * - Validates that `method` is `"GET"` or `"POST"`.  
+     * - For POST, serialises `data` to JSON.  
+     * - Throws on non-2xx responses or network errors.
+     *
+     * ### Type Parameters
+     * - `T` – the expected shape of the JSON response.
+     *
+     * ### Parameters
+     * - `url` (`string`): endpoint URL (absolute or relative).
+     * - `method` (`"GET" | "POST"`): HTTP verb.
+     * - `data?` (`object`): request payload for POST; ignored for GET.
+     *
+     * ### Returns
+     * `Promise<T>` – the deserialised JSON response.
+     *
+     * ### Example
+     * ```js
+     * async login() {
+     *   const creds = { user: "alice", pass: "s3cret" };
+     *   const resp = await this.request("/api/login", "POST", creds);
+     *   console.log("JWT =", resp.token);
+     * ```
+     * ```ts
+     * 
+     * // Typescript
+     * async login() {
+     *   const creds = { user: "alice", pass: "s3cret" };
+     *   const resp = await this.request<{ token: string }>("/api/login", "POST", creds);
+     *   console.log("JWT =", resp.token);
+     * }
+     * ```
+     */
+    public async request<T> (url: string, method: "GET" | "POST", data?: object): Promise<T> {
+        return this.api.request<T>(url, method, data);
+    }
     
+    /**
+     * ## submitForm
+     * 
+     * Gathers form data (from a form element, `FormData` instance, or plain object)
+     * and sends it via `multipart/form-data` POST, returning parsed JSON.
+     * 
+     * ### Behaviour
+     * - If passed an `HTMLFormElement`, calls `new FormData(form)` to capture all fields.
+     * - If passed a `FormData` instance, sends it directly.
+     * - If passed a plain object, converts each key/value pair into FormData entries.
+     * - Uses `fetch()` under the hood and throws on non-2xx responses or network errors.
+     * 
+     * ### Type Parameters
+     * - `T` – the expected shape of the JSON response.
+     * 
+     * ### Parameters
+     * - `url` (`string`): the endpoint URL to POST to.
+     * - `data` (`HTMLFormElement | FormData | Record<string, any>`):  
+     *   - An `HTMLFormElement` to be serialized  
+     *   - A `FormData` object  
+     *   - A plain object which will be converted to `FormData`  
+     * 
+     * ### Returns
+     * `Promise<T>` – the parsed JSON response body.
+     * 
+     * ### Examples
+     * 
+     * // 1) Passing a form element
+     * ```ts
+     * const form = document.querySelector('form')!;
+     * const result = await this.submitForm<{ success: boolean }>(
+     *   "/api/profile",
+     *   form
+     * );
+     * ```
+     * 
+     * // 2) Passing a FormData instance
+     * ```ts
+     * const fd = new FormData();
+     * fd.append("username", "jay");
+     * const result = await this.submitForm<{ id: number }>(
+     *   "/api/users",
+     *   fd
+     * );
+     * ```
+     * 
+     * // 3) Passing a plain object
+     * ```ts
+     * const data = { name: "Alice", age: 30, newsletter: true };
+     * const result = await this.submitForm<{ status: "ok" }>(
+     *   "/api/subscribe",
+     *   data
+     * );
+     * ```
+     */
+    public async submitForm<T>(url: string, data: HTMLFormElement | FormData | Record<string, any>): Promise<T> {
+        let formData: FormData;
+        
+        if (data instanceof HTMLFormElement) formData = new FormData(data);
+        else if (data instanceof FormData) formData = data;
+        else {
+            formData = new FormData();
+            for (const [k, v] of Object.entries(data)) { formData.append(k, String(v));}
+        }
+
+        return this.api.submitForm<T>(url, formData);
+    }
+
     /**
      * Helper method that creates a template from component's HTML/CSS
      */

@@ -23,70 +23,44 @@
 export class API {
 
     /**
-     * ## Request
+     * API perfoms a GET or POST HTTP Request.
      * 
-     * Performs a GET or POST HTTP request.
-     * 
-     * ### Behaviour:
-     * Method performs an HTTP request, validates the input, handles any errors, and returns
-     * a valid JSON response.
-     * 
-     * To use this method, you need to contain it within an `async` function in order to read
-     * the Promise that is returned.
-     * 
-     * ### Parameters:
-     * - **url** (`string`): The URL of the REST API endpoint.
-     * - **method** (`string`): The request method, `POST` or `GET`.
-     * - **data** (`Object`): The JSON data as a JavaScript object.
-     * 
-     * ### Returns:
-     * `Promise` - The request data.
-     * 
-     * ### Example:
-     * ```js
-     * async post(result, json) {
-     *     let data = await this.api.request("/login", "POST", json);
-     *     (data.status) ? result.innerHTML = data.message : result.innerHTML = data.error;
-     * }
-     * ```
-     * ```js
-     * async get() {
-     *     const data = await this.api.request("/fact", "GET");
-     *     console.log(data.fact);
-     * }
-     * ```
+     * The method provides a nice abstraction to the fetch API to help developers
+     * focus on the response rather than the request details.
      */
     public async request<T>(url: string, method: string, data?: Object): Promise<T> {
-
         if (method !== "POST" && method !== "GET") {
-
             throw new Error("Unsupported or invalid method type");
-        
         }
 
         const options: RequestInit = {
             method: method,
-            headers: {
-                "Content-Type": "application/json"
-            }
+            headers: { "Content-Type": "application/json" }
         };
 
         if (method === "POST") options.body = JSON.stringify(data);
 
         try {
-
             const response: Response = await fetch(url, options);
-
             if (!response.ok) throw new Error(`HTTP ERROR: Status: ${response.status}`);
-            
             return await response.json();
-        
-        } catch (error: any) {
-
-            throw new Error(error.message);
-        
-        }
-    
+        } catch (error: any) { throw new Error(error.message);}
     }
 
+    /**
+     * Sends a `FormData` payload via POST using `fetch()`, returns parsed JSON.
+     */
+    public async submitForm<T>(url: string, formData: FormData): Promise<T> {
+        const init: RequestInit = {
+            method: "POST",
+            body: formData
+            // NOTE: fetch will auto-set the correct multipart boundary
+        };
+
+        const resp = await fetch(url, init);
+        if (!resp.ok) {
+            throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
+        }
+        return resp.json() as Promise<T>;
+    }
 }

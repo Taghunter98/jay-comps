@@ -18,17 +18,17 @@ class DangerButtonComp extends ButtonComp {
     
     }
 
-    // Different hook overidden from super
-    hook() {
+    // // Different hook overidden from super
+    // hook() {
         
-        const btn = this.shadowRoot.getElementById("btn");
-        btn.addEventListener("click", () => {
+    //     const btn = this.shadowRoot.getElementById("btn");
+    //     btn.addEventListener("click", () => {
 
-            console.log("Secondry click");
+    //         console.log("Secondry click");
         
-        });
+    //     });
     
-    }
+    // }
 
 }
 

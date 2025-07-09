@@ -53,7 +53,6 @@ export class Design {
      * Helper method provides default font styles modelled on Material Design 3 typography.
      */
     private defaultFontStyle(): string {
-
         return /* css */`
         h1 {font-size: 57px; font-weight: 500; line-height: 64pt;}
         h2 {font-size: 45px; font-weight: 500; line-height: 52pt;}
@@ -64,7 +63,6 @@ export class Design {
         p {font-size: 16px; font-weight: 400; line-height: 24pt;}
         label {font-size: 12px; font-weight: 500; line-height: 16pt;}
         `;
-    
     }
 
     /**
