@@ -1,7 +1,7 @@
 import { ButtonComp } from "./button.js";
 
 class DangerButtonComp extends ButtonComp {
-
+    
     createCSS() {
 
         // First get the base comp css

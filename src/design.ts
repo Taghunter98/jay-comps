@@ -52,18 +52,34 @@ export class Design {
      * ### Returns:
      * `string` - Default CSS to be injected.
      */
-    defaultComp() {
+    defaultComp(host?: string) {
 
         return /* css */ `
         * {
             margin: 0;
             padding: 0;
         }
+        ${host ? host : this.defaultHost()}
+        ${this.defaultFontStyle()}
+        `;
+    
+    }
+
+    public defaultHost(): string {
+
+        return /* style */`
         :host {
             display: block;
             width: 100%;
             box-sizing: border-box;
         }
+        `;
+    
+    }
+
+    private defaultFontStyle(): string {
+
+        return /* style */`
         h1 {
             font-size: 57px;
             font-weight: 500;
@@ -107,7 +123,6 @@ export class Design {
         `;
     
     }
-
     /**
      * ## Create
      * 
