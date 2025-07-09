@@ -107,6 +107,38 @@ export abstract class Comp extends HTMLElement {
     
     }
 
+    /**
+     * ## host
+     * 
+     * Overrides the default `:host` configuration.
+     * 
+     * ### Behaviour:
+     * Nested components by default scale to fill the width of their parent due to 
+     * the restrictions of Shadow DOM components.
+     * 
+     * **Default config**
+     * ```css
+     * 
+     * :host {display: block; width: 100%; box-sizing: border-box;}
+     * ```
+     * 
+     * ### Parameters:
+     * - **hostCSS** (`string`): The new host CSS to be injected.
+     * 
+     * ### Example:
+     * ```js
+     * 
+     * class MyComp extends Comp {
+     * 
+     *     constructor() {
+     * 
+     *         super();
+     *         this.host(`:host {display: inline-block; width: auto;}`);
+     * 
+     *     }
+     * }
+     * ```
+     */
     public host(hostCSS: string) {
 
         this.design.hostStylesOverride = hostCSS;
@@ -116,25 +148,32 @@ export abstract class Comp extends HTMLElement {
     }
 
     /**
-     * ## Render
+     * ## render
      * 
-     * Renders the Comp to the screen.
+     * Injects the component’s HTML and CSS into its shadow root and re-attaches logic.
      * 
-     * ### Behaviour:
-     * Method renders the Comp by setting the Shadow DOM's innerHTML to the generated template.
+     * ### Behaviour
+     * - Calls `createHTML()` to get the latest HTML fragment.  
+     * - Calls `createCSS()` to get the latest CSS string.  
+     * - Sets `shadowRoot.innerHTML` to the combined template (via `createTemplate`).  
+     * - If `hook()` is implemented, invokes it immediately after DOM injection.
+     * - Throws an Error if the shadow root is unavailable.
      * 
-     * If a hook (an internal build method) is defined, it will be invoked afterwards.
+     * ### Throws
+     * - `Error` if `this.shadowRoot` is `null` or undefined.
      * 
-     * ### Example:
+     * ### Returns
+     * - `void`
+     * 
+     * ### Example
      * ```js
-     * 
-     * constructor() {
-     *   
-     *     this.name_ = "Comp";
-     *     this.html_ = this.createHTML();
-     *     this.css_  = this.createCSS();
-     *     
-     *     this.render();
+     * // After subclass initialization, simply:
+     * this.render();
+     *
+     * // Or as part of a lifecycle:
+     * connectedCallback() {
+     *   // ensure all state is ready
+     *   this.render();
      * }
      * ```
      */
@@ -152,26 +191,36 @@ export abstract class Comp extends HTMLElement {
     }
 
     /**
-     * # Update
+     * ## update
      * 
-     * Updates the Comp with new HTML/CSS.
+     * Re-renders the component by injecting fresh HTML and CSS into its shadow root.
      * 
-     * ### Behaviour:
-     * Method updates the Comp's internal HTML/CSS with new values.
+     * ### Behaviour
+     * - If both `newHTML` and `newCSS` are supplied, uses those values directly.
+     * - If either argument is omitted, calls the corresponding
+     *   `createHTML()` or `createCSS()` override to regenerate the missing piece.
+     * - Throws if the component’s shadow root is not attached.
+     * - After updating the DOM, invokes `hook()` so event listeners and other logic
+     *   are wired up again.
      * 
-     * Then renders the Comp with the new template.
+     * ### Parameters
+     * - `newHTML?` (`string`): Optional HTML fragment to inject.  
+     *   If omitted, runs `this.createHTML()`.
+     * - `newCSS?` (`string`): Optional CSS string to inject.  
+     *   If omitted, runs `this.createCSS()`.
      * 
-     * ### Parameters:
-     * - **newHTML** (`string`): The new HTML to be injected.
-     * - **newCSS** (`string`): The new CSS to be injected.
-     * 
-     * ### Example:
+     * ### Example
      * ```js
+     * // Case 1: update both HTML and CSS explicitly
+     * this.update(
+     *   `<p>${this.message}</p>`,
+     *   this.css({ color: "red" })
+     * );
      * 
-     * set buttonText(newButtonText) {
-     * 
-     *     this.buttonText_ = newButtonText;
-     *     this.update(this.createHTML(), this.css_);
+     * // Case 2: regenerate from your subclass methods
+     * set message(text) {
+     *   this.message = text;
+     *   this.update();         // calls createHTML/createCSS internally
      * }
      * ```
      */
@@ -187,28 +236,74 @@ export abstract class Comp extends HTMLElement {
     
     }
 
+    /**
+     * ## css
+     * 
+     * Compiles a CSS declaration block from a `CSSConfig` object.
+     * 
+     * ### Behaviour:
+     * - Converts camelCased keys into kebab-case (e.g. `flexDirection` → `flex-direction`).
+     * - Appends `px` to numeric values by default (e.g. `padding: 10` → `10px`).
+     * - Detects keys ending in `Percent` and treats their value as a percentage  
+     *   (e.g. `widthPercent: 50` → `width: 50%`).
+     * - Supports array values for shorthand properties:  
+     *   `padding: [8, 24]` → `padding: 8px 24px`.
+     * - Recognises boolean flags for common rules:  
+     *   `border: true` injects a default border (e.g. `1px solid var(--border-color)`).
+     * - Accepts UK spellings for CSS properties ('colour', 'centre' etc).
+     * - Applies a `class` field to scope the rules to a selector (e.g. `.my-class { … }`).
+     * 
+     * ### Parameters:
+     * - **config** (`CSSConfig`):  
+     *   An object whose keys are CSS properties (or helper fields) and whose values
+     *   specify the rule. See example below for supported fields.
+     * 
+     * ### Returns:
+     * `string` – A string of compiled CSS, with the selector and declarations ready
+     * to inject into a `<style>` block.
+     * 
+     * ### Example:
+     * ```js
+     * const config = {
+     *   class:         "container",
+     *   display:       "flex",
+     *   flexDirection: "column",
+     *   widthPercent:  80,              // becomes "width: 80%;"
+     *   maxWidth:      600,             // becomes "max-width: 600px;"
+     *   padding:       [16, 32],        // becomes "padding: 16px 32px;"
+     *   colour:        "white",         // UK spelling
+     *   background:    "black100",
+     *   border:        true,            // injects default border rule
+     *   borderRadius:  8,               // becomes "border-radius: 8px;"
+     *   opacity:       0.9,
+     *   pseudoClass:   "hover"          // wraps declarations in ":host(:hover) { … }"
+     * };
+     *
+     * const cssText = this.css(config);
+     * ```
+     * This compiles into:
+     * ```css
+     * .container:hover {
+     *     display: flex;
+     *     flex-direction: column;
+     *     width: 80%; max-width: 600px;
+     *     padding: 16px 32px;
+     *     color: white;
+     *     background: var(--black100);
+     *     border: 1px solid var(--border-color);
+     *     border-radius: 8px; opacity: 0.9;
+     * }
+     * ```
+    * 
+    */
     public css(css: CSSConfig): string {
 
         return this.design.create(css);
     
     }
     
-
     /**
-     * ## Create Template
-     * 
-     * Builds an HTML Element template string.
-     * 
-     * ### Behaviour:
-     * The method takes two string arguments with the HTML and CSS data that is
-     * injected into a template string.
-     * 
-     * ### Parameters:
-     * - **html** (`string`): The HTML to be rendered.
-     * - **css** (`string`): The CSS to be rendered.
-     * 
-     * ### Returns:
-     * `string` - Template string to be injected.
+     * Helper method that creates a template from component's HTML/CSS
      */
     private createTemplate(html: string, css: string): string {
 
@@ -223,87 +318,83 @@ export abstract class Comp extends HTMLElement {
     }
 
     /**
-     * ## Create HTML
+     * ## createHTML
      * 
-     * Creates an HTML template string.
+     * Generates the component’s inner HTML as a string.
      * 
-     * ### Behaviour:
-     * Abstract method that returns a template string with the Comp's inner HTML.
+     * ### Behaviour
+     * - Must be overridden by subclasses to return the HTML fragment 
+     *   that represents this component’s structure.
+     * - Should not include `<style>` tags or host-level wrappers.
      * 
-     * Method needs to be overridden per instance.
+     * ### Returns
+     * - `string`: HTML markup to inject into the shadow root.
      * 
-     * ### Example:
+     * ### Example
      * ```js
-     * 
      * createHTML() {
-     * 
-     *     return `<button>${this.text_}</button>`;
-     * 
+     *   return `
+     *     <button class="btn">${this.text}</button>
+     *   `;
      * }
      * ```
      */
     protected abstract createHTML(): string;
 
     /**
-     * ## Create CSS
+     * ## createCSS
      * 
-     * Creates a CSS template string.
+     * Generates the component’s CSS rules as a string.
      * 
-     * ### Behaviour:
-     * Abstract method that returns a template string with the Comp's inner CSS.
+     * ### Behaviour
+     * - Must be overridden by subclasses to return CSS declarations 
+     *   scoped to the component.
+     * - Use the `css()` helper or `this.design.create()` to build rules
+     *   from a `CSSConfig` object.
+     * - Should only include rules inside a `<style>` block (no wrapper).
      * 
-     * Use the `Design` class `create` API to build the CSS and the `Effects` class
-     * `prop` API for adding effects.
+     * ### Returns
+     * - `string`: CSS declarations to inject via `<style>`.
      * 
-     * Method needs to be overridden per instance.
-     * 
-     * ### Example:
+     * ### Example
      * ```js
-     * 
      * createCSS() {
-     *         
-     *     const style = this.design.create({
-     *         class: "hello",
-     *         background: "black100",
-     *         colour: "white",
-     *         padding: 10,
-     *         borderRadius: 8
-     *     });
-     * 
-     *     return `${style}`;
-     * 
+     *   return this.css({
+     *     class:        "btn",
+     *     background:   "black100",
+     *     colour:       "white",
+     *     padding:      10,
+     *     borderRadius: 8
+     *   });
      * }
      * ```
      */
     protected abstract createCSS(): string;
-    
-    /**
-     * ## Hook
 
-     * Implements JavaScript logic within the component.
+    /**
+     * ## hook
      * 
-     * ### Behaviour:
-     * Abstract method that implements the inner JavaScript logic to be executed when the Comp
-     * is rendered.
+     * Wires up component-specific logic after rendering.
      * 
-     * To select elements from the Comp, use `this.shadowRoot` as all Comps are built using the Shadow DOM.
+     * ### Behaviour
+     * - Must be overridden by subclasses.
+     * - Called automatically after `render()` injects HTML & CSS.
+     * - Use `this.shadowRoot` to query elements inside the shadow DOM.
      * 
-     * Method needs to be overridden per instance.
+     * ### Returns
+     * - `void`
      * 
-     * ### Example:
+     * ### Example
      * ```js
-     * 
      * hook() {
-     * 
-     *     this.shadowRoot
-     *         .querySelector('button')
-     *         .addEventListener("click", () => {
-     *             console.log(this.hello_);
-     *     });
-     * 
+     *   const btn = this.shadowRoot.querySelector('button');
+     *   btn.addEventListener('click', () => {
+     *     console.log('Clicked!', this.text);
+     *   });
      * }
      * ```
      */
     protected abstract hook(): void;
+
 
 }

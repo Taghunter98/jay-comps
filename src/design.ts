@@ -78,13 +78,7 @@ export class Design {
 
     private defaultHost(): string {
 
-        return /* style */`
-        :host {
-            display: block;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        `;
+        return `:host {display: block; width: 100%; box-sizing: border-box;}`;
     
     }
 
@@ -120,29 +114,6 @@ export class Design {
      * 
      * ### Returns:
      * `string` - The compiled CSS code.
-     * 
-     * ### Example:
-     * ```js
-     * 
-     * const cssConfig = this.create({
-     *   class: "container",
-     *   pseudoClass: "hover",
-     *   display: "flex",
-     *   flexDirection: "column",
-     *   boxSizing: "border-box",
-     *   width: "100%",
-     *   maxWidth: 500,
-     *   padding: 20,
-     *   alignItems: "center",
-     *   border: true,
-     *   borderRadius: 10,
-     *   background: "white",
-     *   colour: "black100",
-     *   fontSize: 16,
-     *   fontWeight: 400,
-     *   opacity: 1
-     * });
-     * ```
      */
     public create(css: CSSConfig): string {
 
