@@ -90,66 +90,96 @@ import { Effects } from "./effects.js";
  */
 export abstract class Comp extends HTMLElement {
 
-    protected name_: string;
-    protected html_: string;
-    protected css_: string;
-    private design: Design;
-    public api: API;
-    public effect: Effects;
+    public api = new API();
+    public effect = new Effects();
+    private design = new Design();
 
     constructor() {
 
         super();
         this.attachShadow({ mode: "open" });
 
-        this.name_  = this.getName();
-        this.html_  = this.getTemplate();
-        this.css_   = this.getStyles();
-        this.design = new Design();
-        this.api    = new API();
-        this.effect = new Effects();
+    }
+
+    connectedCallback() {
 
         this.render();
     
     }
 
-    // Getter and setter for Comp name
-    public set name(newCompName: string) {
+    /**
+     * ## Render
+     * 
+     * Renders the Comp to the screen.
+     * 
+     * ### Behaviour:
+     * Method renders the Comp by setting the Shadow DOM's innerHTML to the generated template.
+     * 
+     * If a hook (an internal build method) is defined, it will be invoked afterwards.
+     * 
+     * ### Example:
+     * ```js
+     * 
+     * constructor() {
+     *   
+     *     this.name_ = "Comp";
+     *     this.html_ = this.createHTML();
+     *     this.css_  = this.createCSS();
+     *     
+     *     this.render();
+     * }
+     * ```
+     */
+    public render(): void {
 
-        this.name_ = newCompName;
+        if (!this.shadowRoot) throw new Error("Shadow root is not available.");
+
+        const html = this.createHTML();
+        const css  = this.createCSS();
+        
+        this.shadowRoot.innerHTML = this.createTemplate(html, css);
+
+        if (typeof this.hook === "function")this.hook();
     
     }
-    public get name(): string {
 
-        return this.name_;
+    /**
+     * # Update
+     * 
+     * Updates the Comp with new HTML/CSS.
+     * 
+     * ### Behaviour:
+     * Method updates the Comp's internal HTML/CSS with new values.
+     * 
+     * Then renders the Comp with the new template.
+     * 
+     * ### Parameters:
+     * - **newHTML** (`string`): The new HTML to be injected.
+     * - **newCSS** (`string`): The new CSS to be injected.
+     * 
+     * ### Example:
+     * ```js
+     * 
+     * set buttonText(newButtonText) {
+     * 
+     *     this.buttonText_ = newButtonText;
+     *     this.update(this.createHTML(), this.css_);
+     * }
+     * ```
+     */
+    update(newHTML?: string, newCSS?: string): void {
+
+        if (!this.shadowRoot) throw new Error("No shadow root");
+
+        const html = newHTML || this.createHTML();
+        const css  = newCSS || this.createCSS();
+        
+        this.shadowRoot.innerHTML = this.createTemplate(html, css);
+        this.hook();
     
     }
 
-    // Getter and setter for Comp HTML
-    public set html(newCompHTML: string) {
-
-        this.html_ = newCompHTML;
-    
-    }
-    public get html(): string {
-
-        return this.html_;
-    
-    }
-
-    // Getter and setter for Comp CSS
-    public set css(newCompCSS: string) {
-
-        this.css_ = newCompCSS;
-    
-    }
-    public get css(): string {
-
-        return this.css_;
-    
-    }
-
-    public createStyles(css: CSSConfig): string {
+    public css(css: CSSConfig): string {
 
         return this.design.create(css);
     
@@ -184,104 +214,60 @@ export abstract class Comp extends HTMLElement {
     }
 
     /**
-     * ## Debug
+     * ## Create HTML
      * 
-     * Prints debug information to the console.
+     * Creates an HTML template string.
      * 
      * ### Behaviour:
-     * The method prints out the Comp `name`, `html_` and `css_` attributes to the console for
-     * debugging.
+     * Abstract method that returns a template string with the Comp's inner HTML.
+     * 
+     * Method needs to be overridden per instance.
      * 
      * ### Example:
      * ```js
      * 
-     * this.debug()
-     * ```
-     */
-    public debug(): void {
-
-        console.log("DEBUG COMP: " + this.name);
-        console.log(this.name);
-        console.log(this.html);
-        console.log(this.css);
-    
-    }
-
-    /**
-     * ## Render
+     * createHTML() {
      * 
-     * Renders the Comp to the screen.
+     *     return `<button>${this.text_}</button>`;
      * 
-     * ### Behaviour:
-     * Method renders the Comp by setting the Shadow DOM's innerHTML to the generated template.
-     * 
-     * If a hook (an internal build method) is defined, it will be invoked afterwards.
-     * 
-     * ### Example:
-     * ```js
-     * 
-     * constructor() {
-     *   
-     *     this.name_ = "Comp";
-     *     this.html_ = this.createHTML();
-     *     this.css_  = this.createCSS();
-     *     
-     *     this.render();
      * }
      * ```
      */
-    public render(): void {
-
-        if (!this.shadowRoot) {
-
-            throw new Error("Shadow root is not available.");
-        
-        }
-        this.shadowRoot.innerHTML = this.createTemplate(this.html_, this.css_);
-        if (typeof this.hook === "function") {
-
-            this.hook();
-        
-        }
-    
-    }
+    protected abstract createHTML(): string;
 
     /**
-     * # Update
+     * ## Create CSS
      * 
-     * Updates the Comp with new HTML/CSS.
+     * Creates a CSS template string.
      * 
      * ### Behaviour:
-     * Method updates the Comp's internal HTML/CSS with new values.
+     * Abstract method that returns a template string with the Comp's inner CSS.
      * 
-     * Then renders the Comp with the new template.
+     * Use the `Design` class `create` API to build the CSS and the `Effects` class
+     * `prop` API for adding effects.
      * 
-     * ### Parameters:
-     * - **newHTML** (`string`): The new HTML to be injected.
-     * - **newCSS** (`string`): The new CSS to be injected.
+     * Method needs to be overridden per instance.
      * 
      * ### Example:
      * ```js
      * 
-     * set buttonText(newButtonText) {
+     * createCSS() {
+     *         
+     *     const style = this.design.create({
+     *         class: "hello",
+     *         background: "black100",
+     *         colour: "white",
+     *         padding: 10,
+     *         borderRadius: 8
+     *     });
      * 
-     *     this.buttonText_ = newButtonText;
-     *     this.update(this.createHTML(), this.css_);
+     *     return `${style}`;
+     * 
      * }
      * ```
      */
-    update(newHTML: string, newCSS: string): void {
-
-        this.html_ = newHTML;
-        this.css_  = newCSS;
-        this.render();
+    protected abstract createCSS(): string;
     
-    }
-
-    protected abstract getName(): string;
-    protected abstract getTemplate(): string;
-    protected abstract getStyles(): string;
-
     /**
      * ## Hook
 
