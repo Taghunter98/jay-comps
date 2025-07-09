@@ -4,7 +4,7 @@
  * Filename:    comp.ts
  * Author:      Josh Bassett
  * Date:        08/06/2025
- * Version:     1.2
+ * Version:     1.4
  * 
  * Licence:     Apache 2.0
  */
@@ -95,17 +95,11 @@ export abstract class Comp extends HTMLElement {
     private design = new Design();
 
     constructor() {
-
         super();
         this.attachShadow({ mode: "open" });
-
     }
 
-    private connectedCallback() {
-
-        this.render();
-    
-    }
+    private connectedCallback() { this.render();}
 
     /**
      * ## host
@@ -140,11 +134,9 @@ export abstract class Comp extends HTMLElement {
      * ```
      */
     public host(hostCSS: string) {
-
-        this.design.hostStylesOverride = hostCSS;
+        this.design.hostOverride = hostCSS;
         this.render();
         return this;
-    
     }
 
     /**
@@ -178,16 +170,13 @@ export abstract class Comp extends HTMLElement {
      * ```
      */
     public render(): void {
-
         if (!this.shadowRoot) throw new Error("Shadow root is not available.");
 
-        const html = this.createHTML();
-        const css  = this.createCSS();
-        
-        this.shadowRoot.innerHTML = this.createTemplate(html, css);
+        this.shadowRoot.innerHTML = this.createTemplate(
+            this.createHTML(), this.createCSS()
+        );
 
-        if (typeof this.hook === "function")this.hook();
-    
+        if (typeof this.hook === "function") this.hook();
     }
 
     /**
@@ -225,15 +214,11 @@ export abstract class Comp extends HTMLElement {
      * ```
      */
     update(newHTML?: string, newCSS?: string): void {
-
         if (!this.shadowRoot) throw new Error("No shadow root");
-
         const html = newHTML || this.createHTML();
         const css  = newCSS || this.createCSS();
-        
         this.shadowRoot.innerHTML = this.createTemplate(html, css);
         this.hook();
-    
     }
 
     /**
@@ -296,25 +281,19 @@ export abstract class Comp extends HTMLElement {
      * ```
     * 
     */
-    public css(css: CSSConfig): string {
-
-        return this.design.create(css);
-    
-    }
+    public css(css: CSSConfig): string { return this.design.create(css);}
     
     /**
      * Helper method that creates a template from component's HTML/CSS
      */
     private createTemplate(html: string, css: string): string {
-
         return /* html */ `
-      ${html}
-      <style>
+        ${html}
+        <style>
         ${this.design.defaultComp()}
         ${css}
-      </style>
-    `;
-    
+        </style>
+        `;
     }
 
     /**
@@ -395,6 +374,5 @@ export abstract class Comp extends HTMLElement {
      * ```
      */
     protected abstract hook(): void;
-
 
 }

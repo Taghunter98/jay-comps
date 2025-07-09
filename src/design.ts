@@ -4,84 +4,54 @@
  * Filename:    design.ts
  * Author:      Josh Bassett
  * Date:        09/06/2025
- * Version:     1.3
+ * Version:     1.4
  * 
  * Licence:     Apache 2.0
  */
 
+/**
+ * Custom types for CSSValues and CSSConfig objects
+ */
 export type CSSValue = string | number | boolean | null | Array<number> | undefined;
 export type CSSConfig = Record<string, CSSValue>;
 
-/**
- * # Design
- * 
- * Class that compiles JavaScript → CSS.
- * 
- * ### Overview:
- * This class serves as the compiler for converting JavaScript into valid CSS.
- * 
- * This is achieved through the `compileCSS()` method and the `create()` API for the
- * developer to write their CSS, but with the luxury of JavaScript Record notation.
- * 
- * ### Methods:
- * - **create()**: Public API for the developer to write CSS.
- * - **compileCSS()**: Compiler for CSS.
- * - **parseVariables()**: Converts camel case variables to kebab case.
- * - **check()**: Returns px value.
- * - **americanise()**: Converts British to American property names.
- * 
- * ### Example:
- * ```js
- * const instance = new [ClassName]();
- * instance.[methodName]([argument]);
- * ```
- */
-
 export class Design {
 
-    private hostStylesOverride_?: string;
-
-    public set hostStylesOverride(hostCSS: string | undefined) {
-
-        this.hostStylesOverride_ = hostCSS;
-    
-    } 
+    // Variable to hold CSS to override default :host values.
+    private hostOverride_?: string;
 
     /**
-     * ## Default Comp
-     * 
-     * Injects basic Comp CSS.
-     * 
-     * ### Behaviour:
-     * Method injects values:
-     * - `root` values to ensure shadow DOM elements inherit correctly.
-     * - Typography styles modelled on Material Design for accessibility.
-     * 
-     * ### Returns:
-     * `string` - Default CSS to be injected.
+     * Getter and Settter methods
+     */
+    public set hostOverride(hostCSS: string | undefined) { this.hostOverride_ = hostCSS; }
+    public get hostOverride() { return this.hostOverride_;}
+
+    /**
+     * API provides default values to be injected into every Comp when rendered.
      */
     public defaultComp() {
-
         return /* css */ `
         ${this.resetStyles()}
-        ${this.hostStylesOverride_ ? this.hostStylesOverride_ : this.defaultHost()}
+        ${this.hostOverride_ ? this.hostOverride_ : this.defaultHost()}
         ${this.defaultFontStyle()}
         `;
-    
     }
 
-    private resetStyles(): string {
+    /**
+     * Helper method provides standard reset values.
+     */
+    private resetStyles(): string { return `* {margin: 0; padding: 0;}`;}
 
-        return `* {margin: 0; padding: 0;}`;
-    
-    }
-
+    /**
+     * Helper method provides default :host config.
+     */
     private defaultHost(): string {
-
         return `:host {display: block; width: 100%; box-sizing: border-box;}`;
-    
     }
 
+    /**
+     * Helper method provides default font styles modelled on Material Design 3 typography.
+     */
     private defaultFontStyle(): string {
 
         return /* css */`
@@ -98,121 +68,51 @@ export class Design {
     }
 
     /**
-     * ## Create
-     * 
-     * Generates a CSS string from a configuration object.
-     * 
-     * ### Behaviour:
-     * This method transforms a JavaScript object (with keys in camelCase)
-     * into a CSS string, converting keys to kebab-case and ensuring the proper
-     * conversion of British to American English for property names. Global CSS
-     * variables may be referenced as <code>var(--example)</code>, and all colour
-     * properties must be defined as CSS variables.
-     * 
-     * ### Parameters:
-     * - **css** (`CSSConfig`): A configuration object representing CSS properties and values.
-     * 
-     * ### Returns:
-     * `string` - The compiled CSS code.
+     * API abstracted through the Comp class, provides a method to build a CSS string.
      */
     public create(css: CSSConfig): string {
-
         let cssSelector = (css.pseudoClass) ? `${css.class}:${css.pseudoClass}` : css.class;
-
-        return /* css */ `
-        .${cssSelector} {
-            ${this.compileCSS(css)}
-        }
-        `;
-    
+        return /* css */ `.${cssSelector} {${this.compileCSS(css)}}`;
     }
 
     /**
-     * ## Compile CSS
+     * Method compiles a CSS string from a provided CSS Config object.
      * 
-     * Compiles a CSS configuration object into a valid CSS string.
-     * 
-     * ### Behaviour:
-     * This method iterates over a CSS configuration object, performing necessary
-     * transformations such as:
-     * 
-     * - Converting camelCase keys to kebab-case.
-     * - Converting British English property names to American English.
-     * - Appending appropriate units (e.g. px, pt) to numerical values.
-     * 
-     * ### Parameters:
-     * - **css** (`CSSConfig`): A configuration object representing CSS properties and values.
-     * 
-     * ### Returns:
-     * `string` - The compiled CSS code.
+     * Works by appending a CSS string and running checks against both the key and value.
      */
     private compileCSS(css: CSSConfig): string {
-
         let cssString = "";
 
         for (let key in css) {
-
             let cssValue: CSSValue = css[key];
-
             if (key === "class" || key == "pseudoClass") continue;
-            
             cssValue = this.check(key, cssValue);
-            
             this.isPercent(key) ? key = this.convertPercent(key) : key;
-            key = this.parseVariables(key);
-            
-            cssString += `${this.americanise(key)}: ${this.americanise(cssValue)};\n`;
-        
+            key = this.camelToKebab(key);
+            cssString += `${this.americanise(key)}: ${this.americanise(cssValue)};`;
         }
 
         return cssString;
-    
     }
 
     /**
-     * ## check
-     * 
-     * Runs checks to compile variable types.
-     * 
-     * ### Behaviour:
-     * Method takes the key and value of the CSSConfig and checks for conditions to compile
-     * the correct variable types.
-     * 
-     * ### Parameters:
-     * - **key** (`string`): The key, e.g. (class, fontSize, background).
-     * - **value** (`CSSValue`): The value, e.g. ("classname", 100, var(--black100)).
-     * 
-     * ### Returns:
-     * `string` | `CSSValue` - Valid CSS value.
-     * 
-     * ### Example:
-     * ```js
-     * 
-     * const key = "fontSize";
-     * const val = 200;
-     * const css = check(key, val);
-     * console.log(css);
-     * ```
-     * ```plaintext
-     * 
-     * 200px
-     * ```
+     * Helper method checks CSSConfig values and returns valid CSS properies.
      */
     private check(key: string, value: CSSValue): string | CSSValue {
-
         if (typeof value === 'number') return this.checkInteger(key, value);
         else if (Array.isArray(value)) return this.convertArrays(key, value);
         else if (key === "background" || key === "colour" || key === "border") return `var(--${value})`;
         else return value;
-    
     }
 
+    /**
+     * Helper method checks integers and returns valid CSS properties.
+     */
     private checkInteger(key: string, value: number): string | CSSValue {
-
         if (value === 0) return 0;
         if (this.isPercent(key)) return `${value}%`;
+        
         switch (key) {
-
         case "opacity": 
         case "fontWeight": return value + "pt"; 
         case "top": 
@@ -225,77 +125,23 @@ export class Design {
         case "flexShrink":
         case "order":
         case "aspectRatio":
-
             return value;
-        
         }
         
         return `${value}px`;
-    
     }
 
     /**
-     * ## parseVariables
-     * 
-     * Converts a camel case variable to kebab case.
-     * 
-     * ### Behaviour:
-     * Method uses a regex to split the variable up at capital letters and add a hyphen.
-     * 
-     * ### Parameters:
-     * - **variable** (`string`): Camel case variable.
-     * 
-     * ### Returns:
-     * `string` - Kebab case variable.
-     * 
-     * ### Example:
-     * ```js
-     * 
-     * const c = "fontSize";
-     * const k = parseVariables(c);
-     * console.log(c + " -> " + k);
-     * ```
-     * ```plaintext
-     * 
-     * fontSize -> font-size
-     * ```
+     * Helper method converts camel case variables to kebab case.
      */
-    private parseVariables(key: string) {
-
+    private camelToKebab(key: string) {
         return key.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
-    
     }
 
     /**
-     * ## americanise
-     * 
-     * Converts British → American CSS property names.
-     * 
-     * ### Behaviour:
-     * Method matches CSS property names that are spelt using British English and converts them to American English.
-     * 
-     * This allows for CSS to be written in British English.
-     * 
-     * ### Parameters:
-     * - **variable** (`string`): Variable to be converted.
-     * 
-     * ### Returns:
-     * `string` - Valid CSS property name.
-     * 
-     * ### Example:
-     * ```js
-     * 
-     * const brit = "colour";
-     * const amer = americanise(brit);
-     * console.log(brit + " -> " + amer);
-     * ```
-     * ```plaintext
-     * 
-     * colour -> color
-     * ```
+     * Helper method translates UK -> US CSS property names.
      */
     private americanise(variable: CSSValue): string {
-
         const convert: Record<string, string> = {
             "colour": "color",
             "centre": "center",
@@ -305,73 +151,29 @@ export class Design {
 
         const textValue = String(variable);
         return convert[textValue] || textValue;
-    
     }
 
     /**
-     * ## Convert Arrays
-     * Handles Array types for converting one line css values.
-     * 
-     * ### Parameters:
-     * - **key** (`string`): CSS property key
-     * - **values** (`Array<number>`): CSS values
-     * 
-     * ### Returns:
-     * `string` - Valid CSS property
-     * 
-     * ### Example:
-     * ```js
-     * 
-     * create({
-     *     class: "item",
-     *     padding: [25, 50, 75, 100] // top, right, bottom, left     
-     * });
-     * ```
-     * This compiles to:
-     * 
-     * ```css
-     * .item {
-     *     padding: 25px 50px 75px 100px;
-     * }
-     * ```
+     * Helper method converts integer arrays into CSS properties.
      */
     private convertArrays(key: string, values: Array<number>): string {
-
         let cssStr: string = '';
-        
         for (let val in values ) cssStr += (this.checkInteger(key, values[val]) + " ");
-
         return cssStr;
-    
     }
 
+    
     /**
-     * ## Is Percent
-     * Checks if CSS key is a percent value.
-     * 
-     * ### Parameters
-     * - **key** (`string`): CSS property key
-     * 
-     * ### Return
-     * `string` - Valid CSS property
-     * 
-     * ### Example
-     * ```js
-     * 
-     * const key = "widthPer"
-     * const valid = isPercent(key)
-     * ```
+     * Helper method checks if key is a percentage.
      */
     private isPercent(key: string): boolean {
-
         return key.match(/Percent/) ? true : false;
-    
     }
-
+    
+    /**
+     * Helper method converts a key to valid CSS property.
+     */
     private convertPercent(key: string): string {
-
         return key.replace(/Percent/g, '').toLowerCase();
-    
     }
-
 }

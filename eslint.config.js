@@ -19,10 +19,8 @@ export default defineConfig([
         },
         rules: {
             "@typescript-eslint/no-unused-vars": "warn",
-            "align-assignments/align-assignments": "error",
             "indent": ["error", 4],
             "semi": ["error", "always"],
-            "padded-blocks": ["error", "always"],
             "no-inline-comments": ["error", { "ignorePattern": "(html|css|style)" }],
             "camelcase": "error"
         }
