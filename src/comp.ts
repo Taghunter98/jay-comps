@@ -10,7 +10,7 @@
  */
 
 import { API } from './api.js';
-import { Design } from "./design.js";
+import { CSSConfig, Design } from "./design.js";
 import { Effects } from "./effects.js";
 
 /**
@@ -93,22 +93,23 @@ export abstract class Comp extends HTMLElement {
     protected name_: string;
     protected html_: string;
     protected css_: string;
-    public design: Design;
+    private design: Design;
     public api: API;
     public effect: Effects;
 
     constructor() {
 
         super();
+        this.attachShadow({ mode: "open" });
 
-        this.name_  = "Component Name";
-        this.html_  = "";
-        this.css_   = "";
+        this.name_  = this.getName();
+        this.html_  = this.getTemplate();
+        this.css_   = this.getStyles();
         this.design = new Design();
         this.api    = new API();
         this.effect = new Effects();
 
-        this.attachShadow({ mode: "open" });
+        this.render();
     
     }
 
@@ -145,6 +146,12 @@ export abstract class Comp extends HTMLElement {
     public get css(): string {
 
         return this.css_;
+    
+    }
+
+    public createStyles(css: CSSConfig): string {
+
+        return this.design.create(css);
     
     }
 
@@ -271,60 +278,9 @@ export abstract class Comp extends HTMLElement {
     
     }
 
-    /**
-     * ## Create HTML
-     * 
-     * Creates an HTML template string.
-     * 
-     * ### Behaviour:
-     * Abstract method that returns a template string with the Comp's inner HTML.
-     * 
-     * Method needs to be overridden per instance.
-     * 
-     * ### Example:
-     * ```js
-     * 
-     * createHTML() {
-     * 
-     *     return `<button>${this.text_}</button>`;
-     * 
-     * }
-     * ```
-     */
-    abstract createHTML(): string;
-
-    /**
-     * ## Create CSS
-     * 
-     * Creates a CSS template string.
-     * 
-     * ### Behaviour:
-     * Abstract method that returns a template string with the Comp's inner CSS.
-     * 
-     * Use the `Design` class `create` API to build the CSS and the `Effects` class
-     * `prop` API for adding effects.
-     * 
-     * Method needs to be overridden per instance.
-     * 
-     * ### Example:
-     * ```js
-     * 
-     * createCSS() {
-     *         
-     *     const style = this.design.create({
-     *         class: "hello",
-     *         background: "black100",
-     *         colour: "white",
-     *         padding: 10,
-     *         borderRadius: 8
-     *     });
-     * 
-     *     return `${style}`;
-     * 
-     * }
-     * ```
-     */
-    abstract createCSS(): string;
+    protected abstract getName(): string;
+    protected abstract getTemplate(): string;
+    protected abstract getStyles(): string;
 
     /**
      * ## Hook
@@ -353,6 +309,6 @@ export abstract class Comp extends HTMLElement {
      * }
      * ```
      */
-    abstract hook(): void;
+    protected abstract hook(): void;
 
 }

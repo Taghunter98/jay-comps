@@ -188,7 +188,7 @@ export class Design {
 
             let cssValue: CSSValue = css[key];
 
-            if (key === "class" || key == "psuedoClass") continue;
+            if (key === "class" || key == "pseudoClass") continue;
             
             cssValue = this.check(key, cssValue);
             
@@ -248,7 +248,7 @@ export class Design {
         switch (key) {
 
         case "opacity": 
-        case "fontWeight": 
+        case "fontWeight": return value + "pt"; 
         case "top": 
         case "bottom": 
         case "left": 
