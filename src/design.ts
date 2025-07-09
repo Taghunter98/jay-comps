@@ -39,6 +39,14 @@ export type CSSConfig = Record<string, CSSValue>;
 
 export class Design {
 
+    private hostStylesOverride_?: string;
+
+    public set hostStylesOverride(hostCSS: string | undefined) {
+
+        this.hostStylesOverride_ = hostCSS;
+    
+    } 
+
     /**
      * ## Default Comp
      * 
@@ -52,20 +60,23 @@ export class Design {
      * ### Returns:
      * `string` - Default CSS to be injected.
      */
-    defaultComp(host?: string) {
+    public defaultComp() {
 
         return /* css */ `
-        * {
-            margin: 0;
-            padding: 0;
-        }
-        ${host ? host : this.defaultHost()}
+        ${this.resetStyles()}
+        ${this.hostStylesOverride_ ? this.hostStylesOverride_ : this.defaultHost()}
         ${this.defaultFontStyle()}
         `;
     
     }
 
-    public defaultHost(): string {
+    private resetStyles(): string {
+
+        return `* {margin: 0; padding: 0;}`;
+    
+    }
+
+    private defaultHost(): string {
 
         return /* style */`
         :host {
@@ -79,50 +90,19 @@ export class Design {
 
     private defaultFontStyle(): string {
 
-        return /* style */`
-        h1 {
-            font-size: 57px;
-            font-weight: 500;
-            line-height: 64pt;
-        }
-        h2 {
-            font-size: 45px;
-            font-weight: 500;
-            line-height: 52pt;
-        }
-        h3 {
-            font-size: 36px;
-            font-weight: 500;
-            line-height: 44pt;
-        }
-        h4 {
-            font-size: 32px;
-            font-weight: 400;
-            line-height: 40pt;
-        }
-        h5 {
-            font-size: 28px;
-            font-weight: 400;
-            line-height: 36pt;
-        }
-        h6 {
-            font-size: 24px;
-            font-weight: 400;
-            line-height: 32pt;
-        }
-        p {
-            font-size: 16px;
-            font-weight: 400;
-            line-height: 24pt;
-        }
-        label {
-            font-size: 12px;
-            font-weight: 500;
-            line-height: 16pt;
-        }
+        return /* css */`
+        h1 {font-size: 57px; font-weight: 500; line-height: 64pt;}
+        h2 {font-size: 45px; font-weight: 500; line-height: 52pt;}
+        h3 {font-size: 36px; font-weight: 500; line-height: 44pt;}
+        h4 {font-size: 32px; font-weight: 400; line-height: 40pt;}
+        h5 {font-size: 28px; font-weight: 400; line-height: 36pt;}
+        h6 {font-size: 24px; font-weight: 400; line-height: 32pt;}
+        p {font-size: 16px; font-weight: 400; line-height: 24pt;}
+        label {font-size: 12px; font-weight: 500; line-height: 16pt;}
         `;
     
     }
+
     /**
      * ## Create
      * 

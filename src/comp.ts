@@ -101,9 +101,17 @@ export abstract class Comp extends HTMLElement {
 
     }
 
-    connectedCallback() {
+    private connectedCallback() {
 
         this.render();
+    
+    }
+
+    public host(hostCSS: string) {
+
+        this.design.hostStylesOverride = hostCSS;
+        this.render();
+        return this;
     
     }
 
@@ -184,6 +192,7 @@ export abstract class Comp extends HTMLElement {
         return this.design.create(css);
     
     }
+    
 
     /**
      * ## Create Template

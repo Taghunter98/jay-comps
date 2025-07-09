@@ -20,7 +20,7 @@ class DangerButtonComp extends ButtonComp {
 
     // Different hook overidden from super
     hook() {
-
+        
         const btn = this.shadowRoot.getElementById("btn");
         btn.addEventListener("click", () => {
 
