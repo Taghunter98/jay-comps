@@ -67,6 +67,8 @@ export class Design {
 
     /**
      * API abstracted through the Comp class, provides a method to build a CSS string.
+     * 
+     * Method compiles base CSS and then appends media queries if applicable.
      */
     public create(css: CSSConfig): string {
         const selector = css.pseudoClass ? 
@@ -76,11 +78,7 @@ export class Design {
         let cssText = `.${selector} {${this.compileCSS(css)}}`;
 
         if (css.media && typeof css.media === "object" && !Array.isArray(css.media)) {
-            cssText += this.compileMedia(
-                css.media,
-                css.class,
-                css.pseudoClass
-            );
+            cssText += this.compileMedia(css.media, css.class, css.pseudoClass);
         }
 
         return cssText;

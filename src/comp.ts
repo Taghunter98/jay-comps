@@ -54,12 +54,12 @@ import { Effects } from "./effects.js";
  *   Converts input into `FormData`, POSTS as multipart, and parses JSON.  
  * 
  * ## Example
- * ```ts
+ * ```js
  * class MyComp extends Comp {
- *   private greeting = "Hello, world!";
+ *   greeting_ = "Hello, world!";
  * 
  *   createHTML(): string {
- *     return `<button class="btn">${this.greeting}</button>`;
+ *     return `<button class="btn">${this.greeting_}</button>`;
  *   }
  * 
  *   createCSS(): string {
@@ -68,7 +68,11 @@ import { Effects } from "./effects.js";
  *       background: "blue100",
  *       colour: "white",
  *       padding: [8, 16],
- *       borderRadius: 4
+ *       borderRadius: 4,
+ *       media: {
+ *           size: 600,
+ *           fontSize: 16
+ *       }
  *     });
  *   }
  * 
@@ -76,9 +80,9 @@ import { Effects } from "./effects.js";
  *     const btn = this.shadowRoot!.querySelector("button")!;
  *     btn.addEventListener("click", () => alert(this.greeting));
  *   }
- * }
  * 
- * customElements.define("my-comp", MyComp);
+ *   static { Comp.register(this); }
+ * }
  * ```
  */
 export abstract class Comp extends HTMLElement {
@@ -165,12 +169,9 @@ export abstract class Comp extends HTMLElement {
      * ```js
      * 
      * class MyComp extends Comp {
-     * 
      *     constructor() {
-     * 
      *         super();
      *         this.host(`:host {display: inline-block; width: auto;}`);
-     * 
      *     }
      * }
      * ```

@@ -2,35 +2,28 @@ import { Comp } from "../dist/comp.js";
 
 export class ButtonGroup extends Comp {
 
-    // 1) Placeholders for your two buttons
     createHTML() {
-
         return /* html */`
       <div class="group">
         <comp-button           id="btn1"></comp-button>
         <comp-button-alt    id="btn2"></comp-button-alt>
-        
       </div>
-
       <div>
         <p id="res"></p>
         <comp-input id="email"></comp-input>
         <comp-input id="password"></comp-input>
       </div>
+      <comp-card id="card"></comp-card>
     `;
-    
     }
 
-    // 2) Just give the group some layout
     createCSS() {
-
         return this.css({
             class:        "group",
             display:      "flex",
             gap:          12,
             alignItems:   "center"
         });
-    
     }
 
     async getFact(res) {
@@ -64,16 +57,13 @@ export class ButtonGroup extends Comp {
         res.innerHTML = "Account created. Response: " + result.success;
     }
 
-    // 3) In hook(), grab both by ID and set their .text
     hook() {
-
         const btn1 = this.shadowRoot.getElementById("btn1");
         const btn2 = this.shadowRoot.getElementById("btn2");
         const email = this.shadowRoot.getElementById("email");
         const pass = this.shadowRoot.getElementById("password");
-
-        // These assignments hit each button’s setter
-        // which in turn calls update() on that component only
+        const card = this.shadowRoot.getElementById("card");
+        
         btn1.text = "First Action";
         btn2.text = "Delete Forever";
 
@@ -83,6 +73,10 @@ export class ButtonGroup extends Comp {
         pass.label = "Password";
         pass.prompt = "Enter password";
         pass.type = "password";
+
+        card.heading = "Card Heading";
+        card.text = "This is some cool card text";
+        card.btnText = "Card Action";
 
         btn1.addEventListener("click", () => {
             let res = this.shadowRoot.getElementById("res");
