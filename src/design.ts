@@ -116,18 +116,14 @@ ${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
             return "";
         }
 
-        const nested: CSSConfig = { ...media };
-        delete nested.breakpoint;
-
-        const innerDecls = this.compileCSS(nested);
-
-        const cls = nested.class ?? parentClass ?? "";
-        const pseudo = nested.pseudoClass ?? parentPseudo;
+        delete media.breakpoint;
+        const cls = media.class || parentClass;
+        const pseudo = media.pseudoClass || parentPseudo;
         const selector = cls ? `.${cls}${pseudo ? `:${pseudo}` : ""}` : ":host";
 
         cssString += `
 @media (max-width: ${breakpoint}px) { 
-\t${selector} {${innerDecls}}}\n`;
+\t${selector} {${this.compileCSS(media)}}}\n`;
 
         return cssString;
     }
