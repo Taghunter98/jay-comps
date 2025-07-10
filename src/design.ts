@@ -69,8 +69,21 @@ export class Design {
      * API abstracted through the Comp class, provides a method to build a CSS string.
      */
     public create(css: CSSConfig): string {
-        let cssSelector = (css.pseudoClass) ? `${css.class}:${css.pseudoClass}` : css.class;
-        return /* css */ `.${cssSelector} {${this.compileCSS(css)}}`;
+        const selector = css.pseudoClass ? 
+            `${css.class}:${css.pseudoClass}`: 
+            css.class!;
+
+        let cssText = `.${selector} {${this.compileCSS(css)}}`;
+
+        if (css.media && typeof css.media === "object" && !Array.isArray(css.media)) {
+            cssText += this.compileMedia(
+                css.media,
+                css.class,
+                css.pseudoClass
+            );
+        }
+
+        return cssText;
     }
 
     /**
@@ -82,13 +95,52 @@ export class Design {
         let cssString = "";
 
         for (let key in css) {
-            let cssValue: CSSValue = css[key];
             if (key === "class" || key == "pseudoClass") continue;
+            let cssValue: CSSValue = css[key];
             cssValue = this.check(key, cssValue);
             this.isPercent(key) ? key = this.convertPercent(key) : key;
             key = this.camelToKebab(key);
+
             cssString += `${this.americanise(key)}: ${this.americanise(cssValue)};`;
         }
+
+        return cssString;
+    }
+
+    private compileMedia(
+        media: CSSConfig,
+        parentClass?: CSSValue,
+        parentPseudo?: CSSValue
+    ): string {
+        let cssString = "";
+
+        // 1) pull out the size value
+        const rawSize = media.size;
+        const size = typeof rawSize === "number" ? rawSize : parseInt(String(rawSize), 10);
+        if (isNaN(size)) {
+            console.warn("Media block missing a numeric size:", media);
+            return "";
+        }
+
+        // 2) build a nested CSSConfig without the `size` key
+        const nested: CSSConfig = { ...media };
+        delete nested.size;
+
+        // 3) compile the inner declarations
+        const innerDecls = this.compileCSS(nested);
+
+        // 4) pick the selector (nested.class overrides parent)
+        const cls    = nested.class ?? parentClass ?? "";
+        const pseudo = nested.pseudoClass ?? parentPseudo;
+        const selector = cls ? `.${cls}${pseudo ? `:${pseudo}` : ""}` : ":host";
+
+        // 5) assemble the @media block
+        cssString += `
+@media (max-width: ${size}px) {
+  ${selector} {
+    ${innerDecls}
+  }
+}`;
 
         return cssString;
     }

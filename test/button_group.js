@@ -1,6 +1,6 @@
 import { Comp } from "../dist/comp.js";
 
-class ButtonGroup extends Comp {
+export class ButtonGroup extends Comp {
 
     // 1) Placeholders for your two buttons
     createHTML() {
