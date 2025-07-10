@@ -4,7 +4,7 @@
 
 import { Comp } from "../dist/comp.js";
 
-export class ButtonComp extends Comp {
+export class Button extends Comp {
 
     constructor() {
         super();
@@ -36,9 +36,8 @@ export class ButtonComp extends Comp {
         });
     }
 
-    hook() {
-        
-    }
+    hook() {}
+
+    static { Comp.register(this); }
 }
 
-customElements.define("comp-button", ButtonComp);

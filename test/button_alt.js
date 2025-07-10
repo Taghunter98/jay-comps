@@ -1,6 +1,6 @@
-import { ButtonComp } from "./button.js";
+import { Button } from "./button.js";
 
-class DangerButtonComp extends ButtonComp {
+class ButtonAlt extends Button {
     
     createCSS() {
 
@@ -18,18 +18,5 @@ class DangerButtonComp extends ButtonComp {
     
     }
 
-    // // Different hook overidden from super
-    // hook() {
-        
-    //     const btn = this.shadowRoot.getElementById("btn");
-    //     btn.addEventListener("click", () => {
-
-    //         console.log("Secondry click");
-        
-    //     });
-    
-    // }
-
+    static { super.register(this); }
 }
-
-customElements.define("comp-button-danger", DangerButtonComp);

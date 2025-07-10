@@ -16,91 +16,133 @@ import { Effects } from "./effects.js";
 /**
  * # Comp
  * 
- * Abstract base class for Comps that handles core logic.
+ * Abstract base class for custom elements that encapsulates Shadow DOM setup,
+ * template rendering, styling, data fetching, and lifecycle hooks.
  * 
- * ### Overview:
- * This class serves as the foundation for every component (Comp). Derived classes must override:
- * - **createHTML()**: Provides the component's HTML structure.
- * - **createCSS()**: Defines the component-specific styles.
- * - **hook()**: Implements JavaScript logic within the component.
+ * ## Overview
+ * This class handles the core lifecycle and utilities of a component:
+ * - Attaches an open shadow root  
+ * - Injects HTML and CSS via `render()`  
+ * - Provides JSON and multipart HTTP helpers (`request()`, `submitForm()`)  
+ * - Offers a `css()` helper for building scoped styles  
+ * - Calls `hook()` after render to wire up interactivity  
  * 
- * ### Properties:
- * - **name** (`string`): The name of the component.
- * - **html** (`string`): The HTML structure of the component.
- * - **css** (`string`): The CSS rules applied to the component.
- * - **design** (`Design`): A reference to the Design class for styling.
- * - **api** (`API`): A reference to the API handler for data management.
- * - **effect** (`Effects`): A reference to the Effects class for animations.
+ * Subclasses must override three methods:
+ * - `createHTML(): string` — returns the component’s inner markup  
+ * - `createCSS(): string` — returns component-scoped CSS rules  
+ * - `hook(): void`      — runs after DOM/CSS injection to add event listeners or logic  
  * 
- * ### Methods:
- * - **render()**: Updates the component's Shadow DOM.
- * - **update(newHTML, newCSS)**: Updates the component’s content and re-renders.
- * - **debug()**: Logs the component's data for debugging purposes.
+ * ## Properties
+ * - **design** (`Design`) — style builder, including default host rules  
+ * - **api** (`API`)        — HTTP helper for JSON and form submissions  
+ * - **effect** (`Effects`) — animation and side-effect utility  
  * 
- * ### Example:
- * ```js
+ * ## Methods
+ * - **render(): void**  
+ *   Attaches HTML/CSS to the shadow root and then calls `hook()`.  
  * 
+ * - **update(html?: string, css?: string): void**  
+ *   Re-injects optional overrides or regenerates via `createHTML()`/`createCSS()`.  
+ * 
+ * - **css(config: CSSConfig): string**  
+ *   Compiles a CSSConfig object into a CSS block.  
+ * 
+ * - **request<T>(url: string, method: "GET" | "POST", data?: object): Promise<T>**  
+ *   Sends a JSON GET/POST and returns the parsed response.  
+ * 
+ * - **submitForm<T>(url: string, data: HTMLFormElement \| FormData \| Record<string, any>): Promise<T>**  
+ *   Converts input into `FormData`, POSTS as multipart, and parses JSON.  
+ * 
+ * ## Example
+ * ```ts
  * class MyComp extends Comp {
- *     
- *     constructor() {
- *         
- *         super();
- *         
- *         this.hello_ = "Hello World!"; 
- *      
- *         this.name_ = "Comp";
- *         this.html_ = createHTML();           
- *         this.css_  = createCSS();
+ *   private greeting = "Hello, world!";
  * 
- *         this.render();
- *         
- *     }
+ *   createHTML(): string {
+ *     return `<button class="btn">${this.greeting}</button>`;
+ *   }
  * 
- *     createHTML() {
- *      
- *         return `<button class="hello">${this.hello_}</button>`;
+ *   createCSS(): string {
+ *     return this.css({
+ *       class: "btn",
+ *       background: "blue100",
+ *       colour: "white",
+ *       padding: [8, 16],
+ *       borderRadius: 4
+ *     });
+ *   }
  * 
- *     }
- * 
- *     createCSS() {
- *         
- *         const style = this.design.create({
- *             class: "hello",
- *             background: "black100",
- *             colour: "white",
- *             padding: 10,
- *             borderRadius: 8
- *         });
- * 
- *         return `${style}`;
- *     }
- * 
- *     hook() {
- * 
- *         this.shadowRoot
- *             .querySelector('button')
- *             .addEventListener("click", () => {
- *                 console.log(this.hello_);
- *         });
- * 
- *     }
- * 
+ *   hook(): void {
+ *     const btn = this.shadowRoot!.querySelector("button")!;
+ *     btn.addEventListener("click", () => alert(this.greeting));
+ *   }
  * }
+ * 
+ * customElements.define("my-comp", MyComp);
  * ```
  */
 export abstract class Comp extends HTMLElement {
-
+    
     private api = new API();
     public effect = new Effects();
     private design = new Design();
 
+    private static _registry = new Set<string>();
+
+    /**
+     * ## register
+     * 
+     * Registers a `Comp` subclass as a custom element under the “comp-…” namespace.
+     * 
+     * ### Behavior 
+     * - Converts class name to kebab-case  
+     * - Prefixes the result with `"comp-"`  
+     * - Calls `customElements.define()` once, avoiding duplicate registrations  
+     * 
+     * ### Parameters
+     * - `ctor: typeof Comp`  
+     *   The subclass constructor that you want to register.  
+     * 
+     * ### Errors
+     * Throws an `Error` if stripping “Comp” yields an empty string (i.e. the class is  
+     * named just `"Comp"` or doesn’t end in `"Comp"`).  
+     * 
+     * ### Example
+     * ```ts
+     * export class UserLoginPageComp extends Comp {
+     *   // … your createHTML/createCSS/hook …
+     * 
+     *   // auto-register at load time
+     *   static {
+     *     Comp.register(this);
+     *   }
+     * }
+     * 
+     * // After import, <comp-user-login-page> is available in the DOM
+     * ```
+     */
+    protected static register(ctor: typeof Comp) {
+    
+        const raw = ctor.name;
+        if (!raw) throw new Error(`Can't auto-derive tag for ${ctor.name}`);
+
+        const tag = "comp-" + raw
+            .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+            .toLowerCase();
+
+        if (!Comp._registry.has(tag)) {
+            customElements.define(tag, ctor as unknown as CustomElementConstructor);
+            Comp._registry.add(tag);
+        }
+    }
+
     constructor() {
         super();
         this.attachShadow({ mode: "open" });
+        this.render();
     }
 
-    private connectedCallback() { this.render();}
-
+   
     /**
      * ## host
      * 
@@ -117,7 +159,7 @@ export abstract class Comp extends HTMLElement {
      * ```
      * 
      * ### Parameters:
-     * - **hostCSS** (`string`): The new host CSS to be injected.
+     * - **css** (`string`): The new host CSS to be injected.
      * 
      * ### Example:
      * ```js
@@ -133,8 +175,8 @@ export abstract class Comp extends HTMLElement {
      * }
      * ```
      */
-    public host(hostCSS: string) {
-        this.design.hostOverride = hostCSS;
+    public host(css: string) {
+        this.design.hostOverride = css;
         this.render();
         return this;
     }
@@ -215,10 +257,13 @@ export abstract class Comp extends HTMLElement {
      */
     update(newHTML?: string, newCSS?: string): void {
         if (!this.shadowRoot) throw new Error("No shadow root");
+        
         const html = newHTML || this.createHTML();
         const css  = newCSS || this.createCSS();
+       
         this.shadowRoot.innerHTML = this.createTemplate(html, css);
-        this.hook();
+        
+        if (typeof this.hook === "function") this.hook();
     }
 
     /**
@@ -343,7 +388,7 @@ export abstract class Comp extends HTMLElement {
      * ### Parameters
      * - `url` (`string`): the endpoint URL to POST to.
      * - `data` (`HTMLFormElement | FormData | Record<string, any>`):  
-     *   - An `HTMLFormElement` to be serialized  
+     *   - An `HTMLFormElement` to be serialised  
      *   - A `FormData` object  
      *   - A plain object which will be converted to `FormData`  
      * 
@@ -354,6 +399,7 @@ export abstract class Comp extends HTMLElement {
      * 
      * // 1) Passing a form element
      * ```ts
+     * 
      * const form = document.querySelector('form')!;
      * const result = await this.submitForm<{ success: boolean }>(
      *   "/api/profile",
@@ -363,6 +409,7 @@ export abstract class Comp extends HTMLElement {
      * 
      * // 2) Passing a FormData instance
      * ```ts
+     * 
      * const fd = new FormData();
      * fd.append("username", "jay");
      * const result = await this.submitForm<{ id: number }>(
@@ -373,6 +420,7 @@ export abstract class Comp extends HTMLElement {
      * 
      * // 3) Passing a plain object
      * ```ts
+     * 
      * const data = { name: "Alice", age: 30, newsletter: true };
      * const result = await this.submitForm<{ status: "ok" }>(
      *   "/api/subscribe",
@@ -484,5 +532,4 @@ export abstract class Comp extends HTMLElement {
      * ```
      */
     protected abstract hook(): void;
-
 }

@@ -132,7 +132,7 @@ export class Design {
     /**
      * Helper method converts camel case variables to kebab case.
      */
-    private camelToKebab(key: string) {
+    public camelToKebab(key: string) {
         return key.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
     }
 

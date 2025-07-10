@@ -1,6 +1,6 @@
 import { Comp } from "../dist/comp.js";
 
-class ButtonGroupComp extends Comp {
+class ButtonGroup extends Comp {
 
     // 1) Placeholders for your two buttons
     createHTML() {
@@ -8,7 +8,7 @@ class ButtonGroupComp extends Comp {
         return /* html */`
       <div class="group">
         <comp-button           id="btn1"></comp-button>
-        <comp-button-danger    id="btn2"></comp-button-danger>
+        <comp-button-alt    id="btn2"></comp-button-alt>
         
       </div>
 
@@ -38,18 +38,31 @@ class ButtonGroupComp extends Comp {
         res.innerHTML = data.fact;
     }
 
-    async fakeSubmit() {
-        const result = await this.submitForm("https://httpbin.org/post", {
-            name: "Jay",
-            email: "jay@example.com",
-            flag: true
-        });
-        console.log(result);
+    async testRegister(res) {
+        const fd = new FormData();
 
+        // Required fields
+        fd.append("email", "jay@example.com");
+        fd.append("password", "securePass123");
+        fd.append("name", "Jay");
+        fd.append("surname", "Bassett");
+        fd.append("age", "28");
+        fd.append("occupation", "Frontend Developer");
+        fd.append("bio", "Loves clean UI and clever CSS tricks.");
 
-        console.log("server said:", result);
+        // Simulate a file upload (replace with actual File object in real use)
+        const blob = new Blob(["fake image content"], { type: "image/png" });
+        const file = new File([blob], "profile.png", { type: "image/png" });
+        fd.append("file", file);
+
+        // Submit using your helper
+        const result = await this.submitForm(
+            "https://whondo.com/register",
+            fd
+        );
+
+        res.innerHTML = "Account created. Response: " + result.success;
     }
-
 
     // 3) In hook(), grab both by ID and set their .text
     hook() {
@@ -77,11 +90,10 @@ class ButtonGroupComp extends Comp {
         });
     
         btn2.addEventListener("click", () => {
-            this.fakeSubmit();
+            this.testRegister();
         });
-    
     }
 
+    static { Comp.register(this); }
 }
 
-customElements.define("comp-button-group", ButtonGroupComp);

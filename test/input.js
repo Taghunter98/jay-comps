@@ -1,6 +1,6 @@
 import { Comp } from "../dist/comp.js";
 
-class InputComp extends Comp {
+export class Input extends Comp {
 
     label_ = "Label" || this.label;
     type_ = "text" || this.type;
@@ -24,10 +24,10 @@ class InputComp extends Comp {
         this.setError(value);
     }
 
-    get label() {return this.label_};
-    get type() {return this.type_};
-    get prompt() {return this.prompt_};
-    get error() {return this.error_};
+    get label() {return this.label_;};
+    get type() {return this.type_;};
+    get prompt() {return this.prompt_;};
+    get error() {return this.error_;};
 
     createHTML() {
         return /* html */ `
@@ -88,6 +88,6 @@ class InputComp extends Comp {
         ${this.error ? underlineErr : ''}
         `;
     }
-}
 
-customElements.define("comp-input", InputComp);
+    static {Comp.register(this);};
+}
