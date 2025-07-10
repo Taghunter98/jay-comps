@@ -8,7 +8,7 @@ export class Button extends Comp {
 
     constructor() {
         super();
-        this.host(`:host {display: inline-block; width: auto;}`);
+        this.host({widthPercent: 100});
     }
 
     text_ = "This is a button" || this.text_;

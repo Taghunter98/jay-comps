@@ -171,13 +171,13 @@ export abstract class Comp extends HTMLElement {
      * class MyComp extends Comp {
      *     constructor() {
      *         super();
-     *         this.host(`:host {display: inline-block; width: auto;}`);
+     *         this.host({width: "auto", boxSizing: "border-box"});
      *     }
      * }
      * ```
      */
-    public host(css: string) {
-        this.design.hostOverride = css;
+    public host(css: CSSConfig) {
+        this.design.hostOverride = this.css(css);
         this.render();
         return this;
     }

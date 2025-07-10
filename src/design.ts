@@ -37,14 +37,16 @@ export class Design {
      * Helper method provides standard reset values.
      */
     private resetStyles(): string { 
-        return `* {margin: 0; padding: 0;}`;
+        return `
+* {margin: 0; padding: 0;}`;
     }
 
     /**
      * Helper method provides default :host config.
      */
     private defaultHost(): string {
-        return `:host {display: block; width: 100%; box-sizing: border-box;}`;
+        return `
+:host {display: block; width: 100%; box-sizing: border-box;}`;
     }
 
     /**
@@ -59,8 +61,7 @@ h4 {font-size: 32px; font-weight: 400; line-height: 40pt;}
 h5 {font-size: 28px; font-weight: 400; line-height: 36pt;}
 h6 {font-size: 24px; font-weight: 400; line-height: 32pt;}
 p {font-size: 16px; font-weight: 400; line-height: 24pt;}
-label {font-size: 12px; font-weight: 500; line-height: 16pt;}
-        `;
+label {font-size: 12px; font-weight: 500; line-height: 16pt;}`;
     }
 
     /**
@@ -70,11 +71,11 @@ label {font-size: 12px; font-weight: 500; line-height: 16pt;}
      */
     public create(css: CSSConfig): string {
         const selector = css.pseudoClass ? 
-            `${css.class}:${css.pseudoClass}`: 
+            `\n${css.class}:${css.pseudoClass}`: 
             css.class!;
 
         let cssText = `
-.${selector} {${this.compileCSS(css)}}`;
+${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
 
         if (css.media && typeof css.media === "object" && !Array.isArray(css.media)) {
             cssText += this.compileMedia(css.media, css.class, css.pseudoClass);
@@ -92,13 +93,14 @@ label {font-size: 12px; font-weight: 500; line-height: 16pt;}
         let cssString = "";
 
         for (let key in css) {
-            if (key === "class" || key == "pseudoClass") continue;
+            if (key === "class" || key == "pseudoClass" || key == "media") continue;
             let cssValue: CSSValue = css[key];
             cssValue = this.check(key, cssValue);
             this.isPercent(key) ? key = this.convertPercent(key) : key;
             key = this.camelToKebab(key);
 
-            cssString += `${this.americanise(key)}: ${this.americanise(cssValue)};`;
+            cssString += `
+\t${this.americanise(key)}: ${this.americanise(cssValue)};`;
         }
 
         return cssString;
@@ -124,7 +126,8 @@ label {font-size: 12px; font-weight: 500; line-height: 16pt;}
         const selector = cls ? `.${cls}${pseudo ? `:${pseudo}` : ""}` : ":host";
 
         cssString += `
-@media (max-width: ${size}px) { ${selector} {${innerDecls}}}`;
+@media (max-width: ${size}px) { 
+\t${selector} {${innerDecls}}}\n`;
 
         return cssString;
     }
