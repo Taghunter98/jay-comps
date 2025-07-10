@@ -105,7 +105,7 @@ ${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
 
         return cssString;
     }
-
+    
     private compileMedia(media: CSSConfig, parentClass?: CSSValue, parentPseudo?: CSSValue): string {
         let cssString = "";
 
