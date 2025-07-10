@@ -30,17 +30,15 @@ export class Design {
      * API provides default values to be injected into every Comp when rendered.
      */
     public defaultComp() {
-        return /* css */ `
-        ${this.resetStyles()}
-        ${this.hostOverride_ ? this.hostOverride_ : this.defaultHost()}
-        ${this.defaultFontStyle()}
-        `;
+        return /* css */ `${this.resetStyles()}${this.hostOverride_ ? this.hostOverride_ : this.defaultHost()}${this.defaultFontStyle()}`;
     }
 
     /**
      * Helper method provides standard reset values.
      */
-    private resetStyles(): string { return `* {margin: 0; padding: 0;}`;}
+    private resetStyles(): string { 
+        return `* {margin: 0; padding: 0;}`;
+    }
 
     /**
      * Helper method provides default :host config.
@@ -54,14 +52,14 @@ export class Design {
      */
     private defaultFontStyle(): string {
         return /* css */`
-        h1 {font-size: 57px; font-weight: 500; line-height: 64pt;}
-        h2 {font-size: 45px; font-weight: 500; line-height: 52pt;}
-        h3 {font-size: 36px; font-weight: 500; line-height: 44pt;}
-        h4 {font-size: 32px; font-weight: 400; line-height: 40pt;}
-        h5 {font-size: 28px; font-weight: 400; line-height: 36pt;}
-        h6 {font-size: 24px; font-weight: 400; line-height: 32pt;}
-        p {font-size: 16px; font-weight: 400; line-height: 24pt;}
-        label {font-size: 12px; font-weight: 500; line-height: 16pt;}
+h1 {font-size: 57px; font-weight: 500; line-height: 64pt;}
+h2 {font-size: 45px; font-weight: 500; line-height: 52pt;}
+h3 {font-size: 36px; font-weight: 500; line-height: 44pt;}
+h4 {font-size: 32px; font-weight: 400; line-height: 40pt;}
+h5 {font-size: 28px; font-weight: 400; line-height: 36pt;}
+h6 {font-size: 24px; font-weight: 400; line-height: 32pt;}
+p {font-size: 16px; font-weight: 400; line-height: 24pt;}
+label {font-size: 12px; font-weight: 500; line-height: 16pt;}
         `;
     }
 
@@ -75,7 +73,8 @@ export class Design {
             `${css.class}:${css.pseudoClass}`: 
             css.class!;
 
-        let cssText = `.${selector} {${this.compileCSS(css)}}`;
+        let cssText = `
+.${selector} {${this.compileCSS(css)}}`;
 
         if (css.media && typeof css.media === "object" && !Array.isArray(css.media)) {
             cssText += this.compileMedia(css.media, css.class, css.pseudoClass);
@@ -105,14 +104,9 @@ export class Design {
         return cssString;
     }
 
-    private compileMedia(
-        media: CSSConfig,
-        parentClass?: CSSValue,
-        parentPseudo?: CSSValue
-    ): string {
+    private compileMedia(media: CSSConfig, parentClass?: CSSValue, parentPseudo?: CSSValue): string {
         let cssString = "";
 
-        // 1) pull out the size value
         const rawSize = media.size;
         const size = typeof rawSize === "number" ? rawSize : parseInt(String(rawSize), 10);
         if (isNaN(size)) {
@@ -120,25 +114,17 @@ export class Design {
             return "";
         }
 
-        // 2) build a nested CSSConfig without the `size` key
         const nested: CSSConfig = { ...media };
         delete nested.size;
 
-        // 3) compile the inner declarations
         const innerDecls = this.compileCSS(nested);
 
-        // 4) pick the selector (nested.class overrides parent)
-        const cls    = nested.class ?? parentClass ?? "";
+        const cls = nested.class ?? parentClass ?? "";
         const pseudo = nested.pseudoClass ?? parentPseudo;
         const selector = cls ? `.${cls}${pseudo ? `:${pseudo}` : ""}` : ":host";
 
-        // 5) assemble the @media block
         cssString += `
-@media (max-width: ${size}px) {
-  ${selector} {
-    ${innerDecls}
-  }
-}`;
+@media (max-width: ${size}px) { ${selector} {${innerDecls}}}`;
 
         return cssString;
     }
@@ -202,14 +188,17 @@ export class Design {
     }
 
     /**
-     * Helper method converts integer arrays into CSS properties.
+     * Helper method converts arrays into CSS properties.
      */
-    private convertArrays(key: string, values: Array<number>): string {
+    private convertArrays(key: string, values: Array<CSSValue>): string {
         let cssStr: string = '';
-        for (let val in values ) cssStr += (this.checkInteger(key, values[val]) + " ");
+
+        for (let val in values ) typeof values[val] == "number" ? 
+            cssStr += (this.checkInteger(key, values[val]) + " ") :
+            cssStr += values[val] + " ";
+
         return cssStr;
     }
-
     
     /**
      * Helper method checks if key is a percentage.

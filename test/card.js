@@ -1,9 +1,10 @@
 import { Comp } from "../dist/comp.js";
 
 export class Card extends Comp {
+
     heading_;
     text_;
-    btnText;
+    btnText_;
 
     set heading(value) {
         this.heading_ = value;
@@ -27,8 +28,10 @@ export class Card extends Comp {
     createHTML() {
         return /* html */ `
         <div class="container">
-            <h2>${this.heading}</h2>
-            <p>${this.text}</p>
+            <div class="txt">
+                 <h5 style="font-weight: bold">${this.heading}</h5>
+                <p>${this.text}</p>
+            </div>
             <comp-button id="btn"></comp-button>
         </div>
         `;
@@ -38,20 +41,35 @@ export class Card extends Comp {
         const container = this.css({
             class: "container",
             display: "flex",
-            width: 500,
-            flexDirection: "column",
+            alignItems: "centre",
+            flexDirection: "row",
             gap: 20,
-            padding: [20, 10],
-            boxShadow: "var(--black20) 0px 7px 29px 0px",
+            padding: 20,
+            boxShadow: ["var(--black20)", 0, 7, 29, 0],
             border: "border",
             borderRadius: 14,
             media: {
                 size: 600,
-                widthPercent: 100
+                alignItems: "start",
+                widthPercent: 100,
+                flexDirection: "column"
             }
         });
 
-        return `${container}`;
+        const txt = this.css({
+            class: "txt",
+            display: "flex",
+            widthPercent: 100,
+            gap: 20,
+            alignItems: "centre",
+            media: {
+                size: 600,
+                alignItems: "start",
+                flexDirection: "column"
+            }
+        });
+
+        return `${container} ${txt}`;
     }
 
     hook() {

@@ -74,9 +74,9 @@ export class ButtonGroup extends Comp {
         pass.prompt = "Enter password";
         pass.type = "password";
 
-        card.heading = "Card Heading";
-        card.text = "This is some cool card text";
-        card.btnText = "Card Action";
+        card.heading = "10 Downing Street";
+        card.text = "A lovely home situated in the centre of London.";
+        card.btnText = "Edit";
 
         btn1.addEventListener("click", () => {
             let res = this.shadowRoot.getElementById("res");
