@@ -5,6 +5,7 @@ node_modules/
 .vscode/
 
 # Jay stuff
+test/
 
 # TypeScript compiled JavaScript
 dist/

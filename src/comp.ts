@@ -304,10 +304,14 @@ export abstract class Comp extends HTMLElement {
      *   padding:       [16, 32],        // becomes "padding: 16px 32px;"
      *   colour:        "white",         // UK spelling
      *   background:    "black100",
-     *   border:        true,            // injects default border rule
+     *   border:        "border",        // injects default border rule
      *   borderRadius:  8,               // becomes "border-radius: 8px;"
      *   opacity:       0.9,
-     *   pseudoClass:   "hover"          // wraps declarations in ":host(:hover) { … }"
+     *   pseudoClass:   "hover"          // creates :hover pseudoclass
+     *   media: {
+     *       breakpoint: 600,            // creates media query breakpoint
+     *       widthPercent: 100           // becomes "width: 100%;"
+     *   }
      * };
      *
      * const cssText = this.css(config);
@@ -323,6 +327,12 @@ export abstract class Comp extends HTMLElement {
      *     background: var(--black100);
      *     border: 1px solid var(--border-color);
      *     border-radius: 8px; opacity: 0.9;
+     * }
+     * 
+     * @media (max-width: 600px) {
+     *     .container {
+     *         width: 100%;
+     *     }
      * }
      * ```
     * 

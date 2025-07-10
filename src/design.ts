@@ -109,15 +109,15 @@ ${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
     private compileMedia(media: CSSConfig, parentClass?: CSSValue, parentPseudo?: CSSValue): string {
         let cssString = "";
 
-        const rawSize = media.size;
-        const size = typeof rawSize === "number" ? rawSize : parseInt(String(rawSize), 10);
-        if (isNaN(size)) {
+        const rawSize = media.breakpoint;
+        const breakpoint = typeof rawSize === "number" ? rawSize : parseInt(String(rawSize), 10);
+        if (isNaN(breakpoint)) {
             console.warn("Media block missing a numeric size:", media);
             return "";
         }
 
         const nested: CSSConfig = { ...media };
-        delete nested.size;
+        delete nested.breakpoint;
 
         const innerDecls = this.compileCSS(nested);
 
@@ -126,7 +126,7 @@ ${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
         const selector = cls ? `.${cls}${pseudo ? `:${pseudo}` : ""}` : ":host";
 
         cssString += `
-@media (max-width: ${size}px) { 
+@media (max-width: ${breakpoint}px) { 
 \t${selector} {${innerDecls}}}\n`;
 
         return cssString;
