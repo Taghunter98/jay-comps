@@ -12,7 +12,7 @@
 /**
  * Custom types for CSSValues and CSSConfig objects
  */
-export type CSSValue = string | number | boolean | null | Array<number> | undefined;
+export type CSSValue = string | number | boolean | null | Array<string | number> | undefined;
 export type CSSConfig = Record<string, CSSValue>;
 
 export class Design {
@@ -105,7 +105,7 @@ ${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
 
         return cssString;
     }
-    
+
     private compileMedia(media: CSSConfig, parentClass?: CSSValue, parentPseudo?: CSSValue): string {
         let cssString = "";
 
