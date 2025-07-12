@@ -12,7 +12,7 @@
 /**
  * Custom types for CSSValues and CSSConfig objects
  */
-export type CSSValue = string | number | boolean | null | Array<string | number> | undefined;
+export type CSSValue = string | number | boolean | null | Array<number> | undefined;
 export type CSSConfig = Record<string, CSSValue>;
 
 export class Design {
@@ -105,7 +105,13 @@ ${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
 
         return cssString;
     }
-
+    
+    /**
+     * Method compiles a CSS media query string from a CSS Config object.
+     * 
+     * Works by getting the breakpoint and compiling all fields within the object.
+     * making use of the compileCSS method.
+     */
     private compileMedia(media: CSSConfig, parentClass?: CSSValue, parentPseudo?: CSSValue): string {
         let cssString = "";
 
@@ -119,7 +125,7 @@ ${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
         delete media.breakpoint;
         const cls = media.class || parentClass;
         const pseudo = media.pseudoClass || parentPseudo;
-        const selector = cls ? `.${cls}${pseudo ? `:${pseudo}` : ""}` : ":host";
+        const selector = `.${cls}${pseudo ? `:${pseudo}` : ""}`;
 
         cssString += `
 @media (max-width: ${breakpoint}px) { 
