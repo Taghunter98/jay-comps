@@ -216,15 +216,36 @@ export abstract class Comp extends HTMLElement {
         if (!this.shadowRoot) throw new Error("Shadow root is not available.");
 
         this.shadowRoot.innerHTML = this.createTemplate(
-            this.createHTML(), this.convertCSSObjects(this.createCSS())
+            this.createHTML(), this.compileCSSObjects(this.createCSS())
         );
 
         if (typeof this.hook === "function") this.hook();
     }
 
-    private convertCSSObjects(css: Array<CSSConfig> | CSSConfig): string {
-        return Array.isArray(css) ? css.map(block => this.design.create(block)).join("") : this.design.create(css);
+    /**
+     * Helper method conpiles CSSConfig objects into strings.
+     */
+    private compileCSSObjects(css: CSSConfig | string | Array<CSSConfig | string>): string {
+        const rawArray = Array.isArray(css) ? this.flatten(css) : [css];
+
+        return rawArray.map(entry => {
+            if (typeof entry === "string") return entry;
+            else return this.design.create(entry);    
+        }).join("\n");
     }
+
+    /**
+     * Helper method flattens arrays and compiles each config recursively.
+     */
+    flatten(items: any[], out: Array<CSSConfig | string> = []): Array<CSSConfig | string> {
+        for (const item of items) {
+        if (Array.isArray(item)) this.flatten(item, out);
+        else out.push(item);
+        }
+
+        return out;
+    };
+
 
     /**
      * ## update
@@ -266,7 +287,7 @@ export abstract class Comp extends HTMLElement {
         const html = newHTML || this.createHTML();
         const css  = newCSS || this.createCSS();
        
-        this.shadowRoot.innerHTML = this.createTemplate(html, this.convertCSSObjects(css));
+        this.shadowRoot.innerHTML = this.createTemplate(html, this.compileCSSObjects(css));
         
         if (typeof this.hook === "function") this.hook();
     }
