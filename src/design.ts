@@ -71,7 +71,7 @@ label {font-size: 12px; font-weight: 500; line-height: 16pt;}`;
      */
     public create(css: CSSConfig): string {
         const selector = css.pseudoClass ? 
-            `\n${css.class}:${css.pseudoClass}`: 
+            `${css.class}:${css.pseudoClass}`: 
             css.class!;
 
         let cssText = `

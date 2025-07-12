@@ -177,7 +177,7 @@ export abstract class Comp extends HTMLElement {
      * ```
      */
     public host(css: CSSConfig) {
-        this.design.hostOverride = this.css(css);
+        this.design.hostOverride = this.design.create(css);
         this.render();
         return this;
     }
@@ -216,10 +216,14 @@ export abstract class Comp extends HTMLElement {
         if (!this.shadowRoot) throw new Error("Shadow root is not available.");
 
         this.shadowRoot.innerHTML = this.createTemplate(
-            this.createHTML(), this.createCSS()
+            this.createHTML(), this.convertCSSObjects(this.createCSS())
         );
 
         if (typeof this.hook === "function") this.hook();
+    }
+
+    private convertCSSObjects(css: Array<CSSConfig> | CSSConfig): string {
+        return Array.isArray(css) ? css.map(block => this.design.create(block)).join("") : this.design.create(css);
     }
 
     /**
@@ -256,88 +260,16 @@ export abstract class Comp extends HTMLElement {
      * }
      * ```
      */
-    update(newHTML?: string, newCSS?: string): void {
+    update(newHTML?: string, newCSS?: Array<CSSConfig>): void {
         if (!this.shadowRoot) throw new Error("No shadow root");
         
         const html = newHTML || this.createHTML();
         const css  = newCSS || this.createCSS();
        
-        this.shadowRoot.innerHTML = this.createTemplate(html, css);
+        this.shadowRoot.innerHTML = this.createTemplate(html, this.convertCSSObjects(css));
         
         if (typeof this.hook === "function") this.hook();
     }
-
-    /**
-     * ## css
-     * 
-     * Compiles a CSS declaration block from a `CSSConfig` object.
-     * 
-     * ### Behaviour:
-     * - Converts camelCased keys into kebab-case (e.g. `flexDirection` → `flex-direction`).
-     * - Appends `px` to numeric values by default (e.g. `padding: 10` → `10px`).
-     * - Detects keys ending in `Percent` and treats their value as a percentage  
-     *   (e.g. `widthPercent: 50` → `width: 50%`).
-     * - Supports array values for shorthand properties:  
-     *   `padding: [8, 24]` → `padding: 8px 24px`.
-     * - Recognises boolean flags for common rules:  
-     *   `border: true` injects a default border (e.g. `1px solid var(--border-color)`).
-     * - Accepts UK spellings for CSS properties ('colour', 'centre' etc).
-     * - Applies a `class` field to scope the rules to a selector (e.g. `.my-class { … }`).
-     * 
-     * ### Parameters:
-     * - **config** (`CSSConfig`):  
-     *   An object whose keys are CSS properties (or helper fields) and whose values
-     *   specify the rule. See example below for supported fields.
-     * 
-     * ### Returns:
-     * `string` – A string of compiled CSS, with the selector and declarations ready
-     * to inject into a `<style>` block.
-     * 
-     * ### Example:
-     * ```js
-     * const config = {
-     *   class:         "container",
-     *   display:       "flex",
-     *   flexDirection: "column",
-     *   widthPercent:  80,              // becomes "width: 80%;"
-     *   maxWidth:      600,             // becomes "max-width: 600px;"
-     *   padding:       [16, 32],        // becomes "padding: 16px 32px;"
-     *   colour:        "white",         // UK spelling
-     *   background:    "black100",
-     *   border:        "border",        // injects default border rule
-     *   borderRadius:  8,               // becomes "border-radius: 8px;"
-     *   opacity:       0.9,
-     *   pseudoClass:   "hover"          // creates :hover pseudoclass
-     *   media: {
-     *       breakpoint: 600,            // creates media query breakpoint
-     *       widthPercent: 100           // becomes "width: 100%;"
-     *   }
-     * };
-     *
-     * const cssText = this.css(config);
-     * ```
-     * This compiles into:
-     * ```css
-     * .container:hover {
-     *     display: flex;
-     *     flex-direction: column;
-     *     width: 80%; max-width: 600px;
-     *     padding: 16px 32px;
-     *     color: white;
-     *     background: var(--black100);
-     *     border: 1px solid var(--border-color);
-     *     border-radius: 8px; opacity: 0.9;
-     * }
-     * 
-     * @media (max-width: 600px) {
-     *     .container {
-     *         width: 100%;
-     *     }
-     * }
-     * ```
-    * 
-    */
-    public css(css: CSSConfig): string { return this.design.create(css);}
 
     /**
      * ## request
@@ -517,7 +449,7 @@ export abstract class Comp extends HTMLElement {
      * }
      * ```
      */
-    protected abstract createCSS(): string;
+    protected abstract createCSS(): Array<CSSConfig>;
 
     /**
      * ## hook

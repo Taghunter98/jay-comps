@@ -4,7 +4,7 @@
 
 A lightweight, modular web-component library built in TypeScript. Jay manages rendering, styling, HTTP requests, and component lifecycle so you can focus on HTML, CSS, and behavior.
 
----
+<br>
 
 ## Table of Contents
 
@@ -38,7 +38,6 @@ Ensure your `package.json` includes:
 ```json
 {
   "type": "module",
-  // ...
 }
 ```
 
