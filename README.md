@@ -1,8 +1,23 @@
-# Jay
+# Jay Components
 
-Jay is a lightweight, modular web-component library written in TypeScript. It manages rendering, styling, data fetching, and component lifecycle so you can focus on HTML, CSS, and behavior.
+[![npm version](https://img.shields.io/npm/v/jay-comp)](https://www.npmjs.com/package/jay-comp)
 
+A lightweight, modular web-component library built in TypeScript. Jay manages rendering, styling, HTTP requests, and component lifecycle so you can focus on HTML, CSS, and behavior.
 
+---
+
+## Table of Contents
+
+- [Installation](#installation)  
+- [Bundling with Webpack](#bundling-with-webpack)  
+- [A Minimal Example](#a-minimal-example)  
+- [Core API](#core-api)  
+  - [The Comp Class](#the-comp-class)  
+  - [Overrideable Methods](#overrideable-methods)  
+  - [Helper Methods](#helper-methods)  
+- [Contributing & License](#contributing--license)  
+
+<br>
 
 ## Installation
 
@@ -27,14 +42,14 @@ Ensure your `package.json` includes:
 }
 ```
 
-
+<br>
 
 ## Bundling with Webpack
 
 **index.js**  
 ```js
 import { Comp } from "jay-comp";
-import "./helloworld.js";  // Your custom components
+import "./helloworld.js";  // Your custom Comps
 ```
 
 **webpack.config.cjs**  
@@ -51,12 +66,17 @@ module.exports = {
 };
 ```
 
-After running `npx webpack`, include in your HTML:
+After building:
+```bash
+npx webpack
+```
+
+Include in your HTML:
 ```html
 <script type="module" src="./dist/bundle.js"></script>
 ```
 
-
+<br>
 
 ## A Minimal Example
 
@@ -110,32 +130,39 @@ import "./helloworld.js";
 
 Open `index.html` to see your component in action.
 
----
+<br>
 
 ## Core API
 
 ### The Comp Class
 
-`Comp` is the base class for all Jay components. It handles Shadow DOM, template injection, styling, HTTP requests, and lifecycle hooks.
+`Comp` is Jay’s base class. It handles:
+- **Shadow DOM** setup  
+- **Template injection** via `render()`  
+- **Scoped CSS** through `createCSS()`  
+- **Lifecycle hooks** (`createHTML()`, `createCSS()`, `hook()`)  
+- **HTTP requests** (`request()`, `submitForm()`)
 
 #### Lifecycle Flow
 
 1. **Constructor**  
-   - Attach shadow root  
-   - Call `render()`  
+   - Attaches an open shadow root  
+   - Calls `render()`
 
 2. **render()**  
-   - Inject output of `createHTML()` and `createCSS()` into shadow root  
-   - Call `hook()`
+   - Injects output of `createHTML()` and `createCSS()` into shadow root  
+   - Calls `hook()`
 
 3. **hook()**  
-   - User-defined method for wiring up logic (event listeners, data fetch, etc.)
+   - User-defined for wiring up logic (events, data fetch, etc.)
 
----
+
+<br>
 
 ### Overrideable Methods
 
-#### createHTML(): string  
+#### `createHTML(): string`
+
 Define your component’s inner markup:
 ```js
 createHTML() {
@@ -143,21 +170,23 @@ createHTML() {
 }
 ```
 
-#### createCSS(): string  
+#### `createCSS(): string`
+
 Define scoped styles via the CSS compiler:
 ```js
 createCSS() {
   return this.css({
-    class:    "container",
-    display:  "flex",
-    padding:  [10, 15],
-    breakpoint: 600,
+    class:         "container",
+    display:       "flex",
+    padding:       [10, 15],
+    breakpoint:    600,
     flexDirection: "column"
   });
 }
 ```
 
-#### hook(): void  
+#### `hook(): void`
+
 Run post-render logic:
 ```js
 hook() {
@@ -167,19 +196,23 @@ hook() {
 }
 ```
 
-#### static register(componentClass): void  
-Registers the Comp as a custom element using the class name (kebab-cased + `comp-` prefix):
+#### `static register(componentClass): void`
+
+Registers the Comp as a custom element.  
+Class names convert to kebab-case and prefix `comp-`:
+
 ```js
 static { Comp.register(this); }
-// ButtonComp → <comp-button-comp>
+// MyButtonComp → <comp-my-button-comp>
 ```
 
----
+<br>
 
-## Helper Methods
+### Helper Methods
 
-#### update(html?: string, css?: string): void  
-Re-render markup and/or styles at runtime.  
+#### `update(html?: string, css?: string): void`
+
+Re-render markup and/or styles at runtime:
 ```js
 set title(text) {
   this.title_ = text;
@@ -187,55 +220,143 @@ set title(text) {
 }
 ```
 
-#### css(config: CSSConfig): string  
-Compile a config object into CSS, supporting:
+#### `css(config: CSSConfig): string`
+
+Compiles a JS object into scoped CSS.  
+Supports:
+
 - CamelCase → kebab-case  
-- British-to-American spelling  
-- Arrays for multi-value props  
+- Appended `px` to numbers  
 - `Percent` suffix for `%` units  
-- `breakpoint` key for `@media (max-width: …px)`  
-- `pseudoClass` for states like `:hover`, `:active`
+- Array shorthand for multi-value props  
+- UK spellings (`colour`, `centre`)  
+- `breakpoint` for `@media (max-width:…)`  
+- `pseudoClass` for states (e.g. `:hover`, `:active`)
 
+**Examples**
+
+A basic box layout:
 ```js
-// 1) Basic CSS object
-const basic = this.css({
-  class: "box",
-  display: "flex",
+const config1 = {
+  class:         "box",
+  display:       "flex",
   flexDirection: "column",
-  padding: 10,           // becomes "padding: 10px;"
-  opacity: 0.8
-});
+  padding:       10,
+  opacity:       0.8
+};
+console.log(this.css(config1));
+```
+Compiles to ->
+```css
+.box {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  opacity: 0.8;
+}
+```
 
-// 2) CSS object with media query
-const advanced = this.css({
-  class: "container",
-  colour: "white",               // UK -> American
-  border: ["solid", 2, "grey"],  // creates 2px solid border
-  borderRadius: [4, 8],          // "border-radius: 4px 8px;"
-  widthPercent: 75,              // "width: 75%;"
+Using arrays, percent, and media:
+```js
+const config2 = {
+  class:        "container",
+  colour:       "white",
+  border:       ["solid", 2, "black"],
+  borderRadius: [4, 8],
+  widthPercent: 75,
   media: {
-    breakpoint: 600,    // wrap next props in @media
-    padding: [16, 32]   // becomes "padding: 16px 32px;"
+    breakpoint: 600,
+    padding:    [16, 32]
   }
-});
+};
+console.log(this.css(config2));
+```
+Compiles to ->
+```css
+.container {
+  color: white;
+  border: 2px solid black;
+  border-radius: 4px 8px;
+  width: 75%;
+}
+@media (max-width: 600px) {
+  .container {
+    padding: 16px 32px;
+  }
+}
+```
 
-// 3) Pseudo-class
-const hoverStyles = this.css({
+Pseudo-class:
+```js
+const config3 = {
   class:       "btn",
   background:  "blue100",
   pseudoClass: "hover",
   background:  "blue200"
-});
+};
+console.log(this.css(config3));
+```
+Compiles to ->
+```css
+.btn:hover {
+  background: var(--blue200);
+}
 ```
 
-#### request<T>(url: string, method: "GET"|"POST", data?: object): Promise<T>  
-Perform JSON fetch with automatic error handling.
+#### `request<T>(url: string, method: "GET"|"POST", data?: object): Promise<T>`
 
-#### submitForm<T>(url: string, formData: FormData|HTMLFormElement|object): Promise<T>  
-Submit multipart/form-data for file uploads, returning parsed JSON.
+Perform JSON fetch with error handling.
 
----
+```ts
+// GET users
+interface User { id: number; name: string; }
+const users = await this.request<User[]>("/api/users", "GET");
 
-## Contribution & License
+// POST login
+interface LoginResp { token: string; }
+const login = await this.request<LoginResp>(
+  "/api/login", 
+  "POST", 
+  { user: "alice", pass: "s3cret" }
+);
+console.log("JWT =", login.token);
+```
 
-Jay is licensed under the Apache 2.0 License. Contributions welcome—fork the repo and open a pull request. For issues or feedback, please open an issue or email the maintainer.
+#### `submitForm<T>(url: string, data: HTMLFormElement|FormData|object): Promise<T>`
+
+Send multipart/form-data for uploads.
+
+```ts
+// 1) HTMLFormElement
+const form = document.querySelector("form#profile")!;
+const res1 = await this.submitForm<{ success: boolean }>(
+  "/api/profile", form
+);
+
+// 2) FormData
+const fd = new FormData();
+fd.append("avatar", fileInput.files[0]);
+const res2 = await this.submitForm<{ url: string }>(
+  "/api/upload", fd
+);
+
+// 3) Plain object
+const data = { name: "Alice", age: 30, newsletter: true };
+const res3 = await this.submitForm<{ status: "ok" }>(
+  "/api/subscribe", data
+);
+```
+
+<br>
+
+## Contributing & License
+
+Jay is licensed under the **Apache 2.0 License**. Contributions are welcome!  
+
+1. Fork the repo  
+2. Create a feature branch  
+3. Commit your changes  
+4. Open a Pull Request  
+
+For issues or feedback, please open an issue or email the maintainer.  
+```
