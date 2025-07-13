@@ -97,6 +97,7 @@ ${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
             let cssValue: CSSValue = css[key];
             cssValue = this.check(key, cssValue);
             this.isPercent(key) ? key = this.convertPercent(key) : key;
+            this.isVar(key) ? key = this.convertVar(key) : key;
             key = this.camelToKebab(key);
 
             cssString += `
@@ -140,7 +141,7 @@ ${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
     private check(key: string, value: CSSValue): string | CSSValue {
         if (typeof value === 'number') return this.checkInteger(key, value);
         else if (Array.isArray(value)) return this.convertArrays(key, value);
-        else if (key === "background" || key === "colour" || key === "border") return `var(--${value})`;
+        else if (this.isVar(key)) return `var(--${value})`;
         else return value;
     }
 
@@ -211,11 +212,22 @@ ${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
     private isPercent(key: string): boolean {
         return key.match(/Percent/) ? true : false;
     }
+
+    /**
+     * Helper method checks if key is a CSS variable.
+     */
+    private isVar(key: string): boolean {
+        return key.match(/Var/) ? true : false;
+    }
     
     /**
-     * Helper method converts a key to valid CSS property.
+     * Helper methods to convert operators to valid CSS properties.
      */
     private convertPercent(key: string): string {
         return key.replace(/Percent/g, '').toLowerCase();
+    }
+
+    private convertVar(key: string): string {
+        return key.replace(/Var/g, '').toLowerCase();
     }
 }

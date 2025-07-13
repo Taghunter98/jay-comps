@@ -246,7 +246,6 @@ export abstract class Comp extends HTMLElement {
         return out;
     };
 
-
     /**
      * ## update
      * 
