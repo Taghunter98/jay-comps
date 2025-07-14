@@ -97,7 +97,7 @@ ${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
             let value: CSSValue = css[key];
             const {propKey, propValue} = this.parseProperties(key, value)
 
-            cssString += `\n  ${propKey}: ${propValue};`;
+            cssString += `\n  ${this.americanise(propKey)}: ${this.americanise(propValue)};`;
         }
 
         return cssString;
@@ -181,8 +181,8 @@ ${selector} {${innerCSS}}
             break;
         }
 
-        propKey = this.camelToKebab(this.americanise(key));
-        propValue = this.americanise(propValue);
+        propKey = this.camelToKebab(key);
+        propValue = propValue;
 
         if (Array.isArray(value)) 
             propValue = (value as CSSValue[])
