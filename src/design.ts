@@ -125,15 +125,12 @@ ${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
         const cls    = media.class || parentClass;
         const pseudo = media.pseudoClass || parentPseudo;
         const selector = `.${cls}${pseudo ? `:${pseudo}` : ""}`;
-
         const innerCSS = this.compileCSS(inner as CSSConfig);
 
         return `
 @media (max-width: ${sizeNum}px) {
-    ${selector} {
-${innerCSS}
-    }
-}\n`;
+${selector} {${innerCSS}}
+}`;
     }  
 
     /**
@@ -158,19 +155,25 @@ ${innerCSS}
         return convert[textValue] || textValue;
     }
 
+    /**
+     * Method parses CSSValue objects and returns valid CSS.
+     * 
+     * The method checks for operators that suffix a key, these are then used to validate the CSS type.
+     * 
+     * Method handles all dataypes and arrays, with a recursive call to find all child CSS types.
+     * 
+     * The returned CSS is a hash map of valid css properry key and value.
+     */
     private parseProperties(key: string, value: CSSValue): {propKey: string, propValue: string} {
-        let propKey = "", propValue = "", suffix = "", unit = "";
+        let propKey, propValue;
+        let suffix = "", unit = "";
 
         const OPERATORS: Record<string, string> = {
-            Var: "var", Em: "em", Rem: "rem",  Vw: "vw", Vh: "vh", Vmin: "vmin",
-            Vmax: "vmax", Ch: "ch", Ex: "ex", Pt: "pt", Pc: "pc", In: "in",  Cm: "cm", Mm: "mm", Fr: "fr", S: "s", Ms: "ms", Deg: "deg",
-            Rad: "rad", Grad: "grad", Turn: "turn", Dpi: "dpi",  Dpcm: "dpcm",
-            Dppx: "dppx"
+            Var: "var", Em: "em", Rem: "rem", Vw: "vw", Vh: "vh", Vmin: "vmin", Vmax: "vmax", Ch: "ch", Ex: "ex", Pt: "pt", Pc: "pc", In: "in", Cm: "cm", Mm: "mm", Fr: "fr", S: "s", Ms: "ms", Deg: "deg", Rad: "rad", Grad: "grad", Turn: "turn", Dpi: "dpi", Dpcm: "dpcm", Dppx: "dppx"
         };
 
         const UNITLESS_PROPERTIES = ["opacity","z-index","line-height","flex","order"];
 
-        // Grab operators if exist
         for (const k of Object.keys(OPERATORS)) if (key.endsWith(k)) {
             suffix = k; 
             unit = OPERATORS[k]; 
@@ -178,20 +181,16 @@ ${innerCSS}
             break;
         }
 
-        // Convert to kebab case
         propKey = this.camelToKebab(key);
         propValue = this.americanise(propValue);
 
-        // Handle arrays
         if (Array.isArray(value)) 
             propValue = (value as CSSValue[])
                 .map(v => this.parseProperties(propKey + suffix, v).propValue)
                 .join(" ");
         
-        // Handle 0
         else if (typeof value === "number" && value === 0) propValue = "0";
 
-        // Handle strings
         else if (typeof value === "string") {
             if (suffix === "Var")  propValue = `var(--${value})`;
             else if (suffix === "Url")  propValue = `url(${value})`;
@@ -199,7 +198,6 @@ ${innerCSS}
             else propValue = value;
         }
 
-        // Handle integers - default to px
         else {
             if (unit) propValue = `${value}${unit}`;
             else if (UNITLESS_PROPERTIES.includes(propKey)) propValue = String(value);
