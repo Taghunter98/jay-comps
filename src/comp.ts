@@ -4,355 +4,631 @@
  * Filename:    comp.ts
  * Author:      Josh Bassett
  * Date:        08/06/2025
- * Version:     1.2
+ * Version:     1.4
  * 
  * Licence:     Apache 2.0
  */
 
-import { API } from './api.js';
-import { Design } from "./design.js";
+import { API, ApiResponse } from './api.js';
+import { CSSConfig, Design } from "./design.js";
 import { Effects } from "./effects.js";
 
 /**
  * # Comp
  * 
- * Abstract base class for Comps that handles core logic.
+ * Abstract base class for custom elements that encapsulates Shadow DOM setup,
+ * template rendering, styling, data fetching, and lifecycle hooks.
  * 
- * ### Overview:
- * This class serves as the foundation for every component (Comp). Derived classes must override:
- * - **createHTML()**: Provides the component's HTML structure.
- * - **createCSS()**: Defines the component-specific styles.
- * - **hook()**: Implements JavaScript logic within the component.
+ * ## Overview
+ * This class handles the core lifecycle and utilities of a component:
+ * - Calls `beforeRender()` hook before rendering for pre render logic
+ * - Attaches an open shadow root  
+ * - Injects HTML and CSS via `render()`  
+ * - Provides JSON and multipart HTTP helpers (`request()`, `submitForm()`)  
+ * - Offers a `css()` helper for building scoped styles  
+ * - Calls `afterRender()` hook after rendering to wire up interactivity  
  * 
- * ### Properties:
- * - **name** (`string`): The name of the component.
- * - **html** (`string`): The HTML structure of the component.
- * - **css** (`string`): The CSS rules applied to the component.
- * - **design** (`Design`): A reference to the Design class for styling.
- * - **api** (`API`): A reference to the API handler for data management.
- * - **effect** (`Effects`): A reference to the Effects class for animations.
+ * Subclasses must override three methods:
+ * - `beforeRender(): void` — runs before DOM/CSS injection to add logic  
+ * - `createHTML(): string` — returns the component’s inner markup  
+ * - `createCSS(): string` — returns component-scoped CSS rules  
+ * - `afterRender(): void` — runs after DOM/CSS injection to add event listeners or logic  
  * 
- * ### Methods:
- * - **render()**: Updates the component's Shadow DOM.
- * - **update(newHTML, newCSS)**: Updates the component’s content and re-renders.
- * - **debug()**: Logs the component's data for debugging purposes.
+ * ## Properties
+ * - **design** (`Design`) — style builder, including default host rules  
+ * - **api** (`API`)        — HTTP helper for JSON and form submissions  
+ * - **effect** (`Effects`) — animation and side-effect utility  
  * 
- * ### Example:
+ * ## Methods
+ * - **render(): void**  
+ *   Attaches HTML/CSS to the shadow root and then calls `hook()`.  
+ * 
+ * - **update(html?: string, css?: string): void**  
+ *   Re-injects optional overrides or regenerates via `createHTML()`/`createCSS()`.  
+ * 
+ * - **css(config: CSSConfig): string**  
+ *   Compiles a CSSConfig object into a CSS block.  
+ * 
+ * - **request<ApiResponse<T>>(url: string, method: "GET" | "POST", data?: object): Promise<T>**  
+ *   Sends a JSON GET/POST and returns the parsed response.  
+ * 
+ * - **submitForm<ApiResponseT>(url: string, data: HTMLFormElement \| FormData \| Record<string, any>): Promise<T>**  
+ *   Converts input into `FormData`, POSTS as multipart, and parses JSON.  
+ * 
+ * ## Example
  * ```js
- * 
  * class MyComp extends Comp {
- *     
- *     constructor() {
- *         
- *         super();
- *         
- *         this.hello_ = "Hello World!"; 
- *      
- *         this.name_ = "Comp";
- *         this.html_ = createHTML();           
- *         this.css_  = createCSS();
+ *   greeting_ = "Hello, world!";
  * 
- *         this.render();
- *         
- *     }
+ *   createHTML(): string {
+ *     return `<button class="btn">${this.greeting_}</button>`;
+ *   }
  * 
- *     createHTML() {
- *      
- *         return `<button class="hello">${this.hello_}</button>`;
+ *   createCSS(): string {
+ *     return {
+ *       class: "btn",
+ *       background: "blue100",
+ *       colour: "white",
+ *       padding: [8, 16],
+ *       borderRadius: 4,
+ *       media: {
+ *           size: 600,
+ *           fontSize: 16
+ *      );
+ *   }
  * 
- *     }
+ *   afterRender(): void {
+ *     const btn = this.shadowRoot!.querySelector("button")!;
+ *     btn.addEventListener("click", () => alert(this.greeting));
+ *   }
  * 
- *     createCSS() {
- *         
- *         const style = this.design.create({
- *             class: "hello",
- *             background: "black100",
- *             colour: "white",
- *             padding: 10,
- *             borderRadius: 8
- *         });
- * 
- *         return `${style}`;
- *     }
- * 
- *     hook() {
- * 
- *         this.shadowRoot
- *             .querySelector('button')
- *             .addEventListener("click", () => {
- *                 console.log(this.hello_);
- *         });
- * 
- *     }
- * 
+ *   static { Comp.register(this); }
  * }
  * ```
  */
 export abstract class Comp extends HTMLElement {
-
-    protected name_: string;
-    protected html_: string;
-    protected css_: string;
-    public design: Design;
-    public api: API;
-    public effect: Effects;
-
-    constructor() {
-
-        super();
-
-        this.name_  = "Component Name";
-        this.html_  = "";
-        this.css_   = "";
-        this.design = new Design();
-        this.api    = new API();
-        this.effect = new Effects();
-
-        this.attachShadow({ mode: "open" });
     
-    }
+    private api = new API();
+    public effect = new Effects();
+    private design = new Design();
 
-    // Getter and setter for Comp name
-    public set name(newCompName: string) {
-
-        this.name_ = newCompName;
-    
-    }
-    public get name(): string {
-
-        return this.name_;
-    
-    }
-
-    // Getter and setter for Comp HTML
-    public set html(newCompHTML: string) {
-
-        this.html_ = newCompHTML;
-    
-    }
-    public get html(): string {
-
-        return this.html_;
-    
-    }
-
-    // Getter and setter for Comp CSS
-    public set css(newCompCSS: string) {
-
-        this.css_ = newCompCSS;
-    
-    }
-    public get css(): string {
-
-        return this.css_;
-    
-    }
+    private static _registry = new Set<string>();
 
     /**
-     * ## Create Template
+     * ## register
      * 
-     * Builds an HTML Element template string.
+     * Registers a `Comp` subclass as a custom element under the “comp-…” namespace.
      * 
-     * ### Behaviour:
-     * The method takes two string arguments with the HTML and CSS data that is
-     * injected into a template string.
+     * ### Behavior 
+     * - Converts class name to kebab-case  
+     * - Prefixes the result with `"comp-"`  
+     * - Calls `customElements.define()` once, avoiding duplicate registrations  
      * 
-     * ### Parameters:
-     * - **html** (`string`): The HTML to be rendered.
-     * - **css** (`string`): The CSS to be rendered.
+     * ### Parameters
+     * - `ctor: typeof Comp`  
+     *   The subclass constructor that you want to register.  
      * 
-     * ### Returns:
-     * `string` - Template string to be injected.
-     */
-    private createTemplate(html: string, css: string): string {
-
-        return /* html */ `
-      ${html}
-      <style>
-        ${this.design.defaultComp()}
-        ${css}
-      </style>
-    `;
-    
-    }
-
-    /**
-     * ## Debug
+     * ### Errors
+     * Throws an `Error` if stripping “Comp” yields an empty string (i.e. the class is  
+     * named just `"Comp"` or doesn’t end in `"Comp"`).  
      * 
-     * Prints debug information to the console.
+     * ### Example
+     * ```ts
+     * export class UserLoginPageComp extends Comp {
+     *   // … your createHTML/createCSS/hook …
      * 
-     * ### Behaviour:
-     * The method prints out the Comp `name`, `html_` and `css_` attributes to the console for
-     * debugging.
+     *   // auto-register at load time
+     *   static {
+     *     Comp.register(this);
+     *   }
+     * }
      * 
-     * ### Example:
-     * ```js
-     * 
-     * this.debug()
+     * // After import, <comp-user-login-page> is available in the DOM
      * ```
      */
-    public debug(): void {
-
-        console.log("DEBUG COMP: " + this.name);
-        console.log(this.name);
-        console.log(this.html);
-        console.log(this.css);
+    protected static register(ctor: typeof Comp) {
     
+        const raw = ctor.name;
+        if (!raw) throw new Error(`Can't auto-derive tag for ${ctor.name}`);
+
+        const tag = "comp-" + raw
+            .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+            .toLowerCase();
+
+        if (!Comp._registry.has(tag)) {
+            customElements.define(tag, ctor as unknown as CustomElementConstructor);
+            Comp._registry.add(tag);
+        }
     }
 
+    constructor() {
+        super();
+        this.attachShadow({ mode: "open" });
+        this.render();
+    }
+
+   
     /**
-     * ## Render
+     * ## host
      * 
-     * Renders the Comp to the screen.
+     * Overrides the default `:host` configuration.
      * 
      * ### Behaviour:
-     * Method renders the Comp by setting the Shadow DOM's innerHTML to the generated template.
+     * Nested components by default scale to fill the width of their parent due to 
+     * the restrictions of Shadow DOM components.
      * 
-     * If a hook (an internal build method) is defined, it will be invoked afterwards.
+     * **Default config**
+     * ```css
+     * 
+     * :host {display: block; width: 100%; box-sizing: border-box;}
+     * ```
+     * 
+     * ### Parameters:
+     * - **css** (`string`): The new host CSS to be injected.
      * 
      * ### Example:
      * ```js
      * 
-     * constructor() {
-     *   
-     *     this.name_ = "Comp";
-     *     this.html_ = this.createHTML();
-     *     this.css_  = this.createCSS();
-     *     
-     *     this.render();
+     * class MyComp extends Comp {
+     *     constructor() {
+     *         super();
+     *         this.host({width: "auto", boxSizing: "border-box"});
+     *     }
+     * }
+     * ```
+     */
+    public host(css: CSSConfig) {
+        this.design.hostOverride = this.design.create(css);
+        this.render();
+        return this;
+    }
+
+    /**
+     * ## render
+     * 
+     * Injects the component’s HTML and CSS into its shadow root and re-attaches logic.
+     * 
+     * ### Behaviour
+     *  - If `beforeRender()` is implemented, invokes it immediately before DOM injection.
+     * - Calls `createHTML()` to get the latest HTML fragment.  
+     * - Calls `createCSS()` to get the latest CSS string.  
+     * - Sets `shadowRoot.innerHTML` to the combined template (via `createTemplate`).  
+     * - If `afterRender()` is implemented, invokes it immediately after DOM injection.
+     * - Throws an Error if the shadow root is unavailable.
+     * 
+     * ### Throws
+     * - `Error` if `this.shadowRoot` is `null` or undefined.
+     * 
+     * ### Returns
+     * - `void`
+     * 
+     * ### Example
+     * ```js
+     * // After subclass initialization, simply:
+     * this.render();
+     *
+     * // Or as part of a lifecycle:
+     * connectedCallback() {
+     *   // ensure all state is ready
+     *   this.render();
      * }
      * ```
      */
     public render(): void {
+        if (!this.shadowRoot) throw new Error("Shadow root is not available.");
 
-        if (!this.shadowRoot) {
+        if (typeof this.beforeRender === "function") this.beforeRender();
 
-            throw new Error("Shadow root is not available.");
-        
-        }
-        this.shadowRoot.innerHTML = this.createTemplate(this.html_, this.css_);
-        if (typeof this.hook === "function") {
+        this.shadowRoot.innerHTML = this.createTemplate(
+            this.createHTML(), this.compileCSSObjects(this.createCSS())
+        );
 
-            this.hook();
-        
-        }
-    
+        if (typeof this.afterRender === "function") this.afterRender();
     }
 
     /**
-     * # Update
+     * Helper method conpiles CSSConfig objects into strings.
+     */
+    private compileCSSObjects(css: CSSConfig | string | Array<CSSConfig | string>): string {
+        const rawArray = Array.isArray(css) ? this.flatten(css) : [css];
+
+        return rawArray.map(entry => {
+            if (typeof entry === "string") return entry;
+            else return this.design.create(entry);    
+        }).join("\n");
+    }
+
+    /**
+     * Helper method flattens arrays and compiles each config recursively.
+     */
+    flatten(items: any[], out: Array<CSSConfig | string> = []): Array<CSSConfig | string> {
+        for (const item of items) {
+        if (Array.isArray(item)) this.flatten(item, out);
+        else out.push(item);
+        }
+
+        return out;
+    };
+
+    /**
+     * ## update
      * 
-     * Updates the Comp with new HTML/CSS.
+     * Re-renders the component by injecting fresh HTML and CSS into its shadow root.
      * 
-     * ### Behaviour:
-     * Method updates the Comp's internal HTML/CSS with new values.
+     * ### Behaviour
+     * - If both `newHTML` and `newCSS` are supplied, uses those values directly.
+     * - If either argument is omitted, calls the corresponding
+     *   `createHTML()` or `createCSS()` override to regenerate the missing piece.
+     * - Throws if the component’s shadow root is not attached.
+     * - After updating the DOM, invokes `hook()` so event listeners and other logic
+     *   are wired up again.
      * 
-     * Then renders the Comp with the new template.
+     * ### Parameters
+     * - `newHTML?` (`string`): Optional HTML fragment to inject.  
+     *   If omitted, runs `this.createHTML()`.
+     * - `newCSS?` (`string`): Optional CSS string to inject.  
+     *   If omitted, runs `this.createCSS()`.
      * 
-     * ### Parameters:
-     * - **newHTML** (`string`): The new HTML to be injected.
-     * - **newCSS** (`string`): The new CSS to be injected.
-     * 
-     * ### Example:
+     * ### Example
      * ```js
+     * // Case 1: update both HTML and CSS explicitly
+     * this.update(
+     *   `<p>${this.message}</p>`,
+     *   this.css({ color: "red" })
+     * );
      * 
-     * set buttonText(newButtonText) {
-     * 
-     *     this.buttonText_ = newButtonText;
-     *     this.update(this.createHTML(), this.css_);
+     * // Case 2: regenerate from your subclass methods
+     * set message(text) {
+     *   this.message = text;
+     *   this.update();         // calls createHTML/createCSS internally
      * }
      * ```
      */
-    update(newHTML: string, newCSS: string): void {
+    update(newHTML?: string, newCSS?: Array<CSSConfig>): void {
+        if (!this.shadowRoot) throw new Error("No shadow root");
 
-        this.html_ = newHTML;
-        this.css_  = newCSS;
-        this.render();
-    
+        if (typeof this.beforeRender === "function") this.beforeRender();
+        
+        const html = newHTML || this.createHTML();
+        const css  = newCSS || this.createCSS();
+       
+        this.shadowRoot.innerHTML = this.createTemplate(html, this.compileCSSObjects(css));
+        
+        if (typeof this.afterRender === "function") this.afterRender();
     }
 
     /**
-     * ## Create HTML
+     * ## request
+     *
+     * Performs an HTTP GET or POST and returns the parsed JSON body.
+     *
+     * ### Behaviour
+     * - Validates that `method` is `"GET"` or `"POST"`.  
+     * - For POST, serialises `data` to JSON.  
+     * - Throws on non-2xx responses or network errors.
+     *
+     * ### Type Parameters
+     * - `T` – the expected shape of the JSON response.
+     *
+     * ### Parameters
+     * - `url` (`string`): endpoint URL (absolute or relative).
+     * - `method` (`"GET" | "POST"`): HTTP verb.
+     * - `data?` (`object`): request payload for POST; ignored for GET.
+     *
+     * ### Returns
+     * `Promise<ApiResponseT>` – the deserialised JSON response.
+     * - `ok`: boolean
+     * - `status`: number
+     * - `data`?: T
+     * - `error`?: string
+     *
+     * ### Example
+     * ```ts
+     * // GET
+     * const usersResp = await this.request<User[]>("/api/users", "GET");
+     * if (usersResp.ok) {
+     *     console.log("Got users:", usersResp.data);
+     * } else {
+     *    console.error("Fetch users failed:", usersResp.status, usersResp.error);
+     * }
      * 
-     * Creates an HTML template string.
+     * // POST
+     * const loginResp = await this.request<{ token: string }>("/api/login", "POST",{ user: "alice", pass: "s3cret" });
      * 
-     * ### Behaviour:
-     * Abstract method that returns a template string with the Comp's inner HTML.
+     * if (loginResp.ok) {
+     *    console.log("JWT =", loginResp.data.token);
+     * } else {
+     *    console.error("Login error:", loginResp.status, loginResp.error);
+     * }
+     * ```
+     */
+    public async request<T> (url: string, method: "GET" | "POST", data?: object): Promise<ApiResponse<T>> {
+        return this.api.request<T>(url, method, data);
+    }
+    
+    /**
+     * ## submitForm
      * 
-     * Method needs to be overridden per instance.
+     * Gathers form data (from a form element, `FormData` instance, or plain object)
+     * and sends it via `multipart/form-data` POST, returning parsed JSON.
      * 
-     * ### Example:
+     * ### Behaviour
+     * - If passed an `HTMLFormElement`, calls `new FormData(form)` to capture all fields.
+     * - If passed a `FormData` instance, sends it directly.
+     * - If passed a plain object, converts each key/value pair into FormData entries.
+     * - Uses `fetch()` under the hood and throws on non-2xx responses or network errors.
+     * 
+     * ### Type Parameters
+     * - `T` – the expected shape of the JSON response.
+     * 
+     * ### Parameters
+     * - `url` (`string`): the endpoint URL to POST to.
+     * - `data` (`HTMLFormElement | FormData | Record<string, any>`):  
+     *   - An `HTMLFormElement` to be serialised  
+     *   - A `FormData` object  
+     *   - A plain object which will be converted to `FormData`  
+     * 
+     * ### Returns
+     * `Promise<T>` – the parsed JSON response body.
+     * 
+     * ### Examples
+     * 
+     * // 1) Passing a form element
+     * ```ts
+     * 
+     * const form = document.querySelector('form')!;
+     * const result = await this.submitForm<{ success: boolean }>(
+     *   "/api/profile",
+     *   form
+     * );
+     * ```
+     * 
+     * // 2) Passing a FormData instance
+     * ```ts
+     * 
+     * const fd = new FormData();
+     * fd.append("username", "jay");
+     * const result = await this.submitForm<{ id: number }>(
+     *   "/api/users",
+     *   fd
+     * );
+     * ```
+     * 
+     * // 3) Passing a plain object
+     * ```ts
+     * 
+     * const data = { name: "Alice", age: 30, newsletter: true };
+     * const result = await this.submitForm<{ status: "ok" }>(
+     *   "/api/subscribe",
+     *   data
+     * );
+     * ```
+     */
+    public async submitForm<T>(url: string, data: HTMLFormElement | FormData | Record<string, any>): Promise<ApiResponse<T>> {
+        let formData: FormData;
+        
+        if (data instanceof HTMLFormElement) formData = new FormData(data);
+        else if (data instanceof FormData) formData = data;
+        else {
+            formData = new FormData();
+            for (const [k, v] of Object.entries(data)) { formData.append(k, String(v));}
+        }
+
+        return this.api.submitForm<T>(url, formData);
+    }
+
+    /**
+     * ## getById
+     * 
+     * Retrieves an element from the shadow DOM by its ID.
+     * 
+     * ### Behaviour
+     * - Strips a leading `#` if provided.  
+     * - Delegates to `shadowRoot.getElementById`.  
+     * - Returns `null` when no matching element is found.
+     * 
+     * ### Type Parameters
+     * - `T` – The expected element type (defaults to `HTMLElement`).
+     * 
+     * ### Parameters
+     * - `id` (`string`):  
+     *   The identifier of the element, with or without a leading `#`.
+     * 
+     * ### Returns
+     * `T | null` – The element matching the ID, or `null` if none exists.
+     * 
+     * ### Examples
+     * ```ts
+     * // Lookup without '#'
+     * const btn = this.getById<HTMLButtonElement>('submitBtn');
+     * btn?.addEventListener('click', () => console.log('Clicked'));
+     * 
+     * // Lookup with '#'
+     * const input = this.getById<HTMLInputElement>('#usernameInput');
+     * if (input) input.value = 'alice';
+     * ```
+     */
+    protected getById<T extends Element = HTMLElement>(id: string): T | null {
+        const clean = id.startsWith('#') ? id.slice(1) : id;
+        return this.shadowRoot!.getElementById(clean) as T | null;
+    }
+
+    /**
+     * ## query
+     * 
+     * Selects the first element in the shadow DOM matching a CSS selector.
+     * 
+     * ### Behaviour
+     * - Delegates to `shadowRoot.querySelector`.  
+     * - Returns `null` when no matching element is found.
+     * 
+     * ### Type Parameters
+     * - `T` – The expected element type (defaults to `Element`).
+     * 
+     * ### Parameters
+     * - `sel` (`string`):  
+     *   A valid CSS selector (e.g. `'.foo'`, `'button'`, `'#bar'`, `[data-test]`, etc.).
+     * 
+     * ### Returns
+     * `T | null` – The first matching element, or `null` if none exists.
+     * 
+     * ### Examples
+     * ```ts
+     * // Query a single item
+     * const item = this.query<HTMLLIElement>('ul > li.active');
+     * 
+     * // Query an input by attribute
+     * const email = this.query<HTMLInputElement>('input[name="email"]');
+     * ```
+     */
+    protected query<T extends Element = Element>(sel: string): T | null {
+        return this.shadowRoot!.querySelector(sel) as T | null;
+    }
+
+    /**
+     * ## queryAll
+     * 
+     * Selects all elements in the shadow DOM matching a CSS selector.
+     * 
+     * ### Behaviour
+     * - Delegates to `shadowRoot.querySelectorAll`.  
+     * - Always returns a `NodeListOf<T>`, which may be empty.
+     * 
+     * ### Type Parameters
+     * - `T` – The expected element type (defaults to `Element`).
+     * 
+     * ### Parameters
+     * - `sel` (`string`):  
+     *   A valid CSS selector for matching multiple elements.
+     * 
+     * ### Returns
+     * `NodeListOf<T>` – A live list of all matching elements (empty if none).
+     * 
+     * ### Examples
+     * ```ts
+     * // Get all active list items
+     * const items = this.queryAll<HTMLLIElement>('ul > li.active');
+     * items.forEach(li => li.style.color = 'red');
+     * 
+     * // Get every button in the shadow root
+     * const buttons = this.queryAll<HTMLButtonElement>('button');
+     * buttons.forEach(btn => (btn.disabled = true));
+     * ```
+     */
+    protected queryAll<T extends Element = Element>(sel: string): NodeListOf<T> {
+        return this.shadowRoot!.querySelectorAll(sel) as NodeListOf<T>;
+    }
+
+    /**
+     * Helper method that creates a template from component's HTML/CSS
+     */
+    private createTemplate(html: string, css: string): string {
+        return /* html */ `
+        ${html}
+        <style>
+        ${this.design.defaultComp()}
+        ${css}
+        </style>
+        `;
+    }
+
+    /**
+     * ## createHTML
+     * 
+     * Generates the component’s inner HTML as a string.
+     * 
+     * ### Behaviour
+     * - Must be overridden by subclasses to return the HTML fragment 
+     *   that represents this component’s structure.
+     * - Should not include `<style>` tags or host-level wrappers.
+     * 
+     * ### Returns
+     * - `string`: HTML markup to inject into the shadow root.
+     * 
+     * ### Example
      * ```js
-     * 
      * createHTML() {
-     * 
-     *     return `<button>${this.text_}</button>`;
-     * 
+     *   return `
+     *     <button class="btn">${this.text}</button>
+     *   `;
      * }
      * ```
      */
-    abstract createHTML(): string;
+    protected abstract createHTML(): string;
 
     /**
-     * ## Create CSS
+     * ## createCSS
      * 
-     * Creates a CSS template string.
+     * Generates the component’s CSS rules as a string.
      * 
-     * ### Behaviour:
-     * Abstract method that returns a template string with the Comp's inner CSS.
+     * ### Behaviour
+     * - Must be overridden by subclasses to return CSS declarations 
+     *   scoped to the component.
+     * - Use the `css()` helper or `this.design.create()` to build rules
+     *   from a `CSSConfig` object.
+     * - Should only include rules inside a `<style>` block (no wrapper).
      * 
-     * Use the `Design` class `create` API to build the CSS and the `Effects` class
-     * `prop` API for adding effects.
+     * ### Returns
+     * - `string`: CSS declarations to inject via `<style>`.
      * 
-     * Method needs to be overridden per instance.
-     * 
-     * ### Example:
+     * ### Example
      * ```js
-     * 
      * createCSS() {
-     *         
-     *     const style = this.design.create({
-     *         class: "hello",
-     *         background: "black100",
-     *         colour: "white",
-     *         padding: 10,
-     *         borderRadius: 8
-     *     });
-     * 
-     *     return `${style}`;
-     * 
+     *   return this.css({
+     *     class:        "btn",
+     *     background:   "black100",
+     *     colour:       "white",
+     *     padding:      10,
+     *     borderRadius: 8
+     *   });
      * }
      * ```
      */
-    abstract createCSS(): string;
+    protected abstract createCSS(): Array<CSSConfig> | CSSConfig;
 
     /**
-     * ## Hook
-
-     * Implements JavaScript logic within the component.
+     * ## afterRender
      * 
-     * ### Behaviour:
-     * Abstract method that implements the inner JavaScript logic to be executed when the Comp
-     * is rendered.
+     * Wires up component-specific logic after rendering.
      * 
-     * To select elements from the Comp, use `this.shadowRoot` as all Comps are built using the Shadow DOM.
+     * ### Behaviour
+     * - Must be overridden by subclasses.
+     * - Called automatically after `render()` injects HTML & CSS.
+     * - Use `this.shadowRoot` to query elements inside the shadow DOM.
      * 
-     * Method needs to be overridden per instance.
+     * ### Returns
+     * - `void`
      * 
-     * ### Example:
+     * ### Example
      * ```js
-     * 
-     * hook() {
-     * 
-     *     this.shadowRoot
-     *         .querySelector('button')
-     *         .addEventListener("click", () => {
-     *             console.log(this.hello_);
-     *     });
-     * 
+     * afterRender() {
+     *   const btn = this.shadowRoot.querySelector('button');
+     *   btn.addEventListener('click', () => {
+     *     console.log('Clicked!', this.text);
+     *   });
      * }
      * ```
      */
-    abstract hook(): void;
+    protected abstract afterRender(): void;
 
+    /**
+     * ## afterRender
+     * 
+     * Wires up component-specific logic before rendering.
+     * 
+     * ### Behaviour
+     * - Must be overridden by subclasses.
+     * - Called automatically before `render()` injects HTML & CSS.
+     * 
+     * ### Returns
+     * - `void`
+     * 
+     * ### Example
+     * ```js
+     * beforeRender() {
+     *   // example
+     * }
+     * ```
+     */
+    protected abstract beforeRender(): void;
 }

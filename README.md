@@ -1,311 +1,356 @@
-# Jay
+# Jay Components
 
-Jay is a lightweight, modular web component library built with TypeScript. It provides everything you need to build maintainable custom elements.
+[![npm version](https://img.shields.io/npm/v/jay-comp)](https://www.npmjs.com/package/jay-comp)
 
-Jay is built on 'Comps', modular HTML elements that uss the Shadow DOM to keep the logic and styling tidy. Jay allows you to ignore the rendering and focus on the design and logic through some nice features that give vanilla JS a real boost.
+A lightweight, modular web-component library built in TypeScript. Jay manages rendering, styling, HTTP requests, and component lifecycle so you can focus on HTML, CSS, and behavior.
 
-Writing CSS now feels intuitive, with a custom CSS compiler that converts JavaScript objects into CSS styles, providing camel case support for variable names, and the conversion of British to American spellings for CSS properties. This for me at least is really nice no more 'color'!
+<br>
 
-Jay also comes with a linter with it's own conventions to help you write cleaner and maintainable code.
-## Features
+## Table of Contents
 
-- **Comp System:**  
-  Jay is built on 'Comps' each Comp inherits a name, HTML and CSS value, the user can then define just three methods to build their Comp, `createHTML` `createCSS` and `hook`. These methods are detected by `Comp` and respectively build the HTML CSS and hook injects the internal JS logic into the new Comp.
+- [Installation](#installation)  
+- [Bundling with Webpack](#bundling-with-webpack)  
+- [A Minimal Example](#a-minimal-example)  
+- [Core API](#core-api)  
+  - [The Comp Class](#the-comp-class)  
+  - [Overrideable Methods](#overrideable-methods)  
+  - [Helper Methods](#helper-methods)  
+- [Contributing & License](#contributing--license)  
 
-- **CSS Compiler:**  
-  Jay includes a uniquely designed CSS compiler that accepts JavaScript-style key: value objects and converts them into standard CSS. This feature simplifies the process of writing and maintaining CSS, while ensuring that your styles adhere to the design system. The compiler allows for camelCase names for keys such as `fontSize` -> `font-size` and British English language support so `colour`, `centre`, `behaviour` and `grey` are now valid!
-
-- **Abstracted API Requests:**  
-  The abstracted API request method simplifies network operations. It handles errors gracefully and returns a promise that resolves to JSON data, reducing boilerplate code.
-
-- **Strict Linter Conventions:**  
-  Jay enforces code quality using conventions such as:
-  - Aligned assignments
-  - Consistent spacing in functions
-  - 4-space indentation
-  - Camel case usage
-  - Semicolon enforcement  
+<br>
 
 ## Installation
-To install Jay you can use npm or git clone the repository.
 
-After cloning from git, you will need to compile the TypeScript files with `tsc` or `npx tsc`.
-
-The JavaScript `Comp` file is found within `/dist/comp.js` post compilation. 
-
-- **npm**
-    ```sh
-    npm install jay-comp
-    ```
-
-- **git**
-    ```sh
-    git clone https://github.com/Taghunter98/jay-comps.git
-    cd jay-comps
-    ```
-
-Install the dependencies.
-```plaintext
-npm install --save-dev jay-comp eslint eslint-plugin-align-assignments @typescript-eslint/eslint-plugin @typescript-eslint/parser globals webpack webpack-cli
+**Via npm**  
+```bash
+npm install --save-dev jay-comp webpack webpack-cli
 ```
-### Build with Webpack if using npm
-For Jay to work with npm, you need Webpack and ensure that your `package.json` is set to `type: module`.
 
-Then define the central import file for your project, I just use `index.js`. Inside, import the main `Comp` class from npm modules, then all your custom Comps. This is to ensure that it will work with HTML.
+**Via Git**  
+```bash
+git clone https://github.com/Taghunter98/jay-comps.git
+cd jay-comps
+npm install
+npx tsc
+```
+
+<br>
+
+## Bundling with Webpack
+
+Ensure your `package.json` includes:
+```json
+{
+  "type": "module",
+}
+```
+
+**index.js**  
 ```js
-import { Comp } from 'jay-comp';
-
-// Import your custom Comps
-import './button.js';
-import './input.js';
-import './card.js';
+import { Comp } from "jay-comp";
+import "./helloworld.js";  // Your custom components
 ```
-Then setup a `webpack.config.cjs` file, this is a simple example, just ensure that path to your `index.js` is correct.
 
-Run `npx webpack` or a build script if you have one configured.
-```cjs
-const path = require('path');
+**webpack.config.cjs**  
+```js
+const path = require("path");
+
 module.exports = {
-    entry: "<PATH_TO_INDEX.JS>",
-    mode: 'development',
-    output: {
-        filename: 'bundle.js',
-        path: path.resolve(__dirname, 'dist')
-    }
+  entry: "./index.js",
+  mode: "development",
+  output: {
+    filename: "bundle.js",
+    path: path.resolve(__dirname, "dist")
+  }
 };
 ```
 
-This will generate a `dist/bundle.js` directory that you can then link your HTML to and use Jay.
+After building:
+```bash
+npx webpack
+```
+
+Include in your HTML:
 ```html
-<script type="module" src="<PATH_TO_DIST>/dist/bundle.js"></script>
+<script type="module" src="./dist/bundle.js"></script>
 ```
 
-_Note if you have issues, double check your pathing and that your project is setup as a module rather than common JS._
+<br>
 
-### Configuring the Linter
-The linter, if you are running VSCode, needs an additional workspace requirement, add a `.vscode` directory with `settings.json` and pase the following settings. Reload the workspace and Jay will start shouting at you!
+## A Minimal Example
 
-Note a known bug with the linter, you need to disable `editor.formatOnSave` to avoid formatting conflicts.
-
-```json
-{
-  "editor.codeActionsOnSave": {
-      "source.fixAll.eslint": "explicit"
-  },
-  "eslint.validate": [
-      "javascript",
-      "javascriptreact",
-      "typescript",
-      "typescriptreact"
-  ],
-  "liveServer.settings.port": 5501
-}
-```
-
-Finally extend the linter config to your `eslint.config.js`.
+**helloworld.js**  
 ```js
-import config from "jay-comp/eslint.config.js";
-export default config;
+import { Comp } from "jay-comp";
+
+class HelloWorld extends Comp {
+  greeting_ = "Hello, Jay!";
+
+  createHTML() {
+    return `<h1>Hello Jay!</h1>`;
+  }
+
+  createCSS() {
+    return {
+      class: "heading",
+      colour: "#1F276E",
+      fontSizePt: 24,
+      breakpoint: 600,
+      padding: [8, 16]
+    };
+  }
+
+  hook() {
+    this.shadowRoot
+      .querySelector("h1")
+      .addEventListener("click", () => alert(this.greeting_));
+  }
+
+  static { Comp.register(this); }
+}
 ```
 
-## Defining a Comp
-To create a new Comp, you need to import and extend `Comp` and call `super()` in the constructor to invoke the parent attributes.
-
-You can then write all the Comp specific attributes, note that any mutable attributes need to be postfixed with an underscore _.
-
+**index.js**  
 ```js
-import { Comp } from "../dist/comp.js";
-
-class ButtonComp extends Comp {
-
-    constructor() {
-
-        super();                                                    
-
-        this.buttonText_    = "This is a button";
-        this.buttonAction_  = "";  
-        
-        this.name_ = "Button";
-        this.html_ = this.createHTML();
-        this.css_  = this.createCSS();
-
-        this.render();
-    
-    }
-}
+import { Comp } from "jay-comp";
+import "./helloworld.js";
 ```
 
-## Updating Attributes
-
-It is advisable for reusable Comps to write getter and setter methods to update the attributes, note for updating values you need to call `update()` and depending on if the HTML or CSS needs changing call the appropriate method.
-
-```js
-set buttonText(newButtonText) {
-
-    this.buttonText_ = newButtonText;
-    this.update(this.createHTML(), this.css_);
-    
-}
-get buttonText() {
-
-    return this.buttonText_;
-
-}
+**index.html**  
+```html
+<!DOCTYPE html>
+<html>
+  <body>
+    <comp-hello-world></comp-hello-world>
+    <script type="module" src="./dist/bundle.js"></script>
+  </body>
+</html>
 ```
 
-## Writing HTML
+Open `index.html` to see your component in action.
 
-The `createHTML()` method is where you will define your Comp's HTML. It needs to be overridden otherwise Jay will warn you in the console.
+<br>
 
-Writing HTML is rather straightforward, simply write a template string and for reusability include your class attributes. 
+## Core API
 
-Note this method must be called `createHTML()` for Jay to recognise it.
+### The Comp Class
 
-For a better UX, install [Inline HTML](vscode:extension/*pushqrdx.inline-html*) then use the comment postfix to enable syntax highlighting.
+`Comp` is Jay’s base class. It handles:
+- **Shadow DOM** setup  
+- **Template injection** via `render()`  
+- **Scoped CSS** through `createCSS()`  
+- **Lifecycle hooks** (`createHTML()`, `createCSS()`, `hook()`)  
+- **HTTP requests** (`request()`, `submitForm()`)
 
+#### Lifecycle Flow
+
+1. **Constructor**  
+   - Attaches an open shadow root  
+   - Calls `render()`
+
+2. **render()**  
+   - Injects output of `createHTML()` and `createCSS()` into shadow root  
+   - Calls `hook()`
+
+3. **hook()**  
+   - User-defined for wiring up logic (events, data fetch, etc.)
+
+
+<br>
+
+### Overrideable Methods
+
+#### `createHTML(): string`
+
+Define your component’s inner markup:
 ```js
 createHTML() {
-
-    return /* html */ `
-    <button id="button" class="button">${this.buttonText_}</button>
-    `;
-    
-    }
+  return `<div class="container">${this.content_}</div>`;
+}
 ```
 
-## Writing CSS
+#### `createCSS(): string`
 
-Jay’s custom CSS compiler is a standout feature. Instead of writing CSS in a traditional stylesheet, you can define your component styles using a JavaScript object with key-value pairs.
-
-The `createCSS()` method is also where you will define your animation properties and build out your styles. It needs to be overridden otherwise Jay will warn you in the console.
-
-As a former designer, I thought about the best way to keep styles maintainable and my solution was to define Comp styles using variables with the power of JavaScript and creativity of CSS.
-
-The result provides a clean and organised look for your work with no messy CSS and a simple syntax that will feel comfortable and familiar.
-
-Note the method must be called`createCSS()` for Jay to recognise it. 
-
+Define scoped styles via the CSS compiler:
 ```js
 createCSS() {
-
-    const effect = this.effect.scale(0, 10);
-    const prop   = this.effect.prop("scale", .5);
-
-    const button = this.design.create({
-        class: "button",
-        colour: "white",
-        background: "black100",
-        padding: "9px 16px",
-        border: "border",
-        borderRadius: 8,
-        cursor: "pointer",
-        transition: "background 0.1s ease-in-out"
-    });
-
-    const buttonHover = this.design.create({
-        class: "button",
-        psuedoClass: "hover",
-        background: "black80",
-    });
-
-    const buttonActive = this.design.create({
-        class: "button",
-        psuedoClass: "active",
-        background: "black60"
-    });
-
-    return `
-    ${effect}
-    ${button}
-    ${buttonHover}
-    ${buttonActive}
-    `;
-    
+  return this.css({
+    class:         "container",
+    display:       "flex",
+    padding:       [10, 15],
+    breakpoint:    600,
+    flexDirection: "column"
+  });
 }
 ```
 
-## Writing JavaScript
+#### `hook(): void`
 
-To write JavaScript you need to first override the method `hook()` which gives you some space to write out your internal logic.
-
-A good approach is to write all functions within the Comp's scope and call them within `hook()` for a cleaner experience.
-
-Note the method must be called`hook()` for Jay to recognise it. Also Comp creates elements in the shadow DOM so you will need to call `shadowRoot` to access values.
-
+Run post-render logic:
 ```js
-
-async getCatFact() {
-
-        const data = await this.api.request("https://catfact.ninja/fact", "GET");
-        console.log(data.fact);
-    
-    }
-
 hook() {
-
-    this.shadowRoot
-        .querySelector('button')
-        .addEventListener("click", () => {
-
-            this.getCatFact();
-        
-        });
-    
-    }
-```
-
-### Exporting and Usage
-As Jay is built using web components under the hood, to define your new Comp, use the `customElements` API to create an HTML element.
-
-The Jay convention is to prefix all elements with 'comp-' to ensure a valid element.
-
-```js
-class MyComp extends Comp {
-// Define Comp logic...
-}
-
-customElements.define("comp-button", Button);
-```
-
-To then nest your Comp within another Comp's HTML, you need to either import it directly or define an `imports.js` to house all Comps as a cleaner way to ensure all imports are handled in one place.
-
-I like to split my UI into `comps` and `comp-pages`, meaning that my HTML only needs to import one Comp for a clean experience.
-
-```js
-// Import Comps
-import './comps/button.js';
-import './comps/card.js';
-import './comps/input.js';
-
-// Import Comp pages
-import './comp-pages/login.js';
-```
-
-This import structure allows for nesting.
-
-```js
-createHTML() {
-    
-    return /* html */ `
-    <div class="background">
-        <div class="container">
-            <h3>${this.title_}</h3>
-
-            <comp-input id="email" name="email"></comp-input>
-            <comp-input id="password" name="password"></comp-input>
-
-            <comp-button id="submit">Refresh Card</comp-button>
-
-            <p id="result"></p>
-        </div>
-        
-    </div>
-    `;
-    
+  this.shadowRoot
+    .querySelector(".container")
+    .addEventListener("click", () => console.log("Clicked!"));
 }
 ```
 
-### Contribution and Licence
-Jay is licenced under the Apache 2.0 licence, so feel free to use it within your projects and any suggestions or bugs please create an issue or send me an email :)
+#### `static register(componentClass): void`
 
-To contribute pleas fork the repo and make a pull request, I'll be happy to review and merge your suggestions and new features.
+Registers the Comp as a custom element.  
+Class names convert to kebab-case and prefix `comp-`:
+
+```js
+static { Comp.register(this); }
+// MyButtonComp → <comp-my-button-comp>
+```
+
+<br>
+
+### Helper Methods
+
+#### `update(html?: string, css?: string): void`
+
+Re-render markup and/or styles at runtime:
+```js
+set title(text) {
+  this.title_ = text;
+  this.update();  // Re-runs createHTML/createCSS
+}
+```
+
+#### `css(config: CSSConfig): string`
+
+Compiles a single config object into scoped CSS. Supports a wide range of suffix-based operators:
+
+#### Rules
+- CamelCase → kebab-case
+- UK spellings (colour, centre, behaviour)
+
+**Examples**
+
+A basic box layout:
+```js
+const config1 = {
+  class:         "box",
+  display:       "flex",
+  flexDirection: "column",
+  padding:       10,
+  opacity:       0.8
+};
+console.log(this.css(config1));
+```
+
+Using arrays, percent, and media:
+```js
+const config2 = {
+  class:        "container",
+  colour:       "white",
+  border:       ["solid", 2, "black"],
+  borderRadius: [4, 8],
+  widthPercent: 75,
+  media: {
+    breakpoint: 600,
+    padding:    [16, 32]
+  }
+};
+console.log(this.css(config2));
+```
+
+Pseudo-class:
+```js
+const config3 = {
+  class:       "btn",
+  background:  "blue100",
+  pseudoClass: "hover",
+  background:  "blue200"
+};
+console.log(this.css(config3));
+```
+
+### CSSConfig Operator Reference
+
+| Operator      | CSS Output                                   | Example Config                 | Compiled CSS Snippet                                      |
+|--------------------------|----------------------------------------------|------------------------------------|-----------------------------------------------------------|
+| *(default number)*       | `px` appended (except `0`)                   | `margin: 16`                       | `margin: 16px;`                                           |
+| Percent                  | `%`                                          | `widthPercent: 50`                 | `width: 50%;`                                             |
+| Var                      | `var(--token)`                               | `colourVar: "blue100"`             | `color: var(--blue100);`                                  |
+| Url                      | `url(...)`                                   | `backgroundImageUrl: "hero.jpg"`   | `background-image: url(hero.jpg);`                        |
+| Calc                     | `calc(...)`                                  | `widthCalc: "100% - 32px"`         | `width: calc(100% - 32px);`                               |
+| Em                       | `em`                                         | `paddingTopEm: 2.3`                | `padding-top: 2.3em;`                                     |
+| Rem                      | `rem`                                        | `marginRem: 1.5`                   | `margin: 1.5rem;`                                         |
+| Vw / Vh / Vmin / Vmax    | `vw` / `vh` / `vmin` / `vmax`                | `heightVh: 80`                     | `height: 80vh;`                                           |
+| Ch / Ex                  | `ch` / `ex`                                  | `textIndentCh: 2`                  | `text-indent: 2ch;`                                       |
+| Pt / Pc                  | `pt` / `pc`                                  | `fontSizePt: 12`                   | `font-size: 12pt;`                                        |
+| In / Cm / Mm             | `in` / `cm` / `mm`                           | `widthCm: 10`                      | `width: 10cm;`                                            |
+| Fr                       | `fr` (Grid)                                  | `columnFr: 1`                      | `grid-template-columns: 1fr;`                             |
+| S / Ms                   | `s` / `ms` (Time)                            | `transitionDurationS: 0.3`         | `transition-duration: 0.3s;`                              |
+| Deg / Rad / Grad / Turn  | `deg` / `rad` / `grad` / `turn` (Angle)      | `rotateDeg: 45`                    | `transform: rotate(45deg);`                               |
+| Dpi / Dpcm / Dppx        | `dpi` / `dpcm` / `dppx` (Resolution)         | `printResDpi: 300`                 | `print-resolution: 300dpi;`                               |
+| Raw strings / Keywords   | passed through as-is                         | `display: "flex"`                  | `display: flex;`                                          |
+| Array shorthand          | space-separated multi-value                  | `padding: [8,16]`                  | `padding: 8px 16px;`                  |
+| Unitless props           | no units                                     | `opacity: 0.5`                     | `opacity: 0.5;`                                           |
+| pseudoClass              | pseudo-selector state                        | `pseudoClass: "hover"`             | `.my-class:hover { … }`                                   |
+| breakpoint (in `media`)  | `@media (max-width: …px)`                    | `media: { breakpoint:600, padding:8 }` | `@media (max-width:600px){.my-class{padding:8px;}}` |
+
+
+<br>
+
+### HTTP Requests API
+
+#### `request<T>(url: string, method: "GET"|"POST", data?: object): Promise<T>`
+
+Perform JSON fetch with error handling.
+
+```ts
+// GET users
+interface User { id: number; name: string; }
+const users = await this.request<User[]>("/api/users", "GET");
+
+// POST login
+interface LoginResp { token: string; }
+const login = await this.request<LoginResp>(
+  "/api/login", 
+  "POST", 
+  { user: "alice", pass: "s3cret" }
+);
+console.log("JWT =", login.token);
+```
+
+#### `submitForm<T>(url: string, data: HTMLFormElement|FormData|object): Promise<T>`
+
+Send multipart/form-data for uploads.
+
+```ts
+// 1) HTMLFormElement
+const form = document.querySelector("form#profile")!;
+const res1 = await this.submitForm<{ success: boolean }>(
+  "/api/profile", form
+);
+
+// 2) FormData
+const fd = new FormData();
+fd.append("avatar", fileInput.files[0]);
+const res2 = await this.submitForm<{ url: string }>(
+  "/api/upload", fd
+);
+
+// 3) Plain object
+const data = { name: "Alice", age: 30, newsletter: true };
+const res3 = await this.submitForm<{ status: "ok" }>(
+  "/api/subscribe", data
+);
+```
+
+<br>
+
+## Contributing & License
+
+Jay is licensed under the **Apache 2.0 License**. Contributions are welcome!  
+
+1. Fork the repo  
+2. Create a feature branch  
+3. Commit your changes  
+4. Open a Pull Request  
+
+For issues or feedback, please open an issue or email the maintainer.  

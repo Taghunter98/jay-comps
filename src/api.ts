@@ -9,84 +9,92 @@
  * Licence:     Apache 2.0
  */
 
+/** Response type */
+    export interface ApiResponse<T> {
+        ok: boolean;
+        status: number;
+        data?: T;
+        error?: string;
+    }
+
 /**
- * # API
- * 
  * Class for HTTP requests.
- * 
- * ### Overview:
+ *
  * Provides a method `request` to abstract from JavaScript's `fetch` API.
- * 
- * ### Methods:
- * - **request()**: Makes a GET or POST HTTP request.
  */
 export class API {
 
     /**
-     * ## Request
+     * API perfoms a GET or POST HTTP Request.
      * 
-     * Performs a GET or POST HTTP request.
-     * 
-     * ### Behaviour:
-     * Method performs an HTTP request, validates the input, handles any errors, and returns
-     * a valid JSON response.
-     * 
-     * To use this method, you need to contain it within an `async` function in order to read
-     * the Promise that is returned.
-     * 
-     * ### Parameters:
-     * - **url** (`string`): The URL of the REST API endpoint.
-     * - **method** (`string`): The request method, `POST` or `GET`.
-     * - **data** (`Object`): The JSON data as a JavaScript object.
-     * 
-     * ### Returns:
-     * `Promise` - The request data.
-     * 
-     * ### Example:
-     * ```js
-     * async post(result, json) {
-     *     let data = await this.api.request("/login", "POST", json);
-     *     (data.status) ? result.innerHTML = data.message : result.innerHTML = data.error;
-     * }
-     * ```
-     * ```js
-     * async get() {
-     *     const data = await this.api.request("/fact", "GET");
-     *     console.log(data.fact);
-     * }
-     * ```
+     * The method provides a nice abstraction to the fetch API to help developers
+     * focus on the response rather than the request details.
      */
-    public async request<T>(url: string, method: string, data?: Object): Promise<T> {
-
+    public async request<T>(url: string, method: string, data?: Object): Promise<ApiResponse<T>> {
         if (method !== "POST" && method !== "GET") {
-
-            throw new Error("Unsupported or invalid method type");
-        
+            return {
+                ok: false,
+                status: 0,
+                error: `Unsupported HTTP method: ${method}`
+            };
         }
 
         const options: RequestInit = {
             method: method,
-            headers: {
-                "Content-Type": "application/json"
-            }
+            headers: { "Content-Type": "application/json" }
         };
 
         if (method === "POST") options.body = JSON.stringify(data);
 
         try {
+            const response = await fetch(url, options);
+            const result: ApiResponse<T> = {ok: response.ok, status: response.status};
 
-            const response: Response = await fetch(url, options);
-
-            if (!response.ok) throw new Error(`HTTP ERROR: Status: ${response.status}`);
-            
-            return await response.json();
-        
-        } catch (error: any) {
-
-            throw new Error(error.message);
-        
-        }
-    
+            try {
+                const data = await response.json();
+                if (result.ok) result.data = data;
+                else result.error = data?.message || JSON.stringify(data);
+            } catch (jsonErr) {
+                if (!response.ok) result.error = `HTTP ${response.status} ${response.statusText}`;
+            }
+            return result;
+        } catch (networkErr: any) {
+            return {
+                ok: false,
+                status: 0,
+                error: networkErr.message || String(networkErr)
+            };
+        } 
     }
 
+    /**
+     * Sends a `FormData` payload via POST using `fetch()`, returns parsed JSON.
+     */
+    public async submitForm<T>(url: string, formData: FormData): Promise<ApiResponse<T>> {
+        const init: RequestInit = {
+            method: "POST",
+            body: formData
+        };
+
+        try {
+            const response = await fetch(url, init);
+            const result: ApiResponse<T> = {ok: response.ok, status: response.status};
+
+            try {
+                const data = await response.json();
+                if (result.ok) result.data = data;
+                else result.error = data?.error || JSON.stringify(data);
+            } catch (jsonErr) {
+                if (!response.ok) result.error = `HTTP ${response.status} ${response.statusText}`;
+            }
+            return result;
+        } catch (networkErr: any) {
+            return {
+                ok: false,
+                status: 0,
+                error: networkErr.message || String(networkErr)
+            };
+        } 
+
+    }
 }
