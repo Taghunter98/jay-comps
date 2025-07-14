@@ -87,7 +87,7 @@ class HelloWorld extends Comp {
   greeting_ = "Hello, Jay!";
 
   createHTML() {
-    return `<h1>${this.greeting_}</h1>`;
+    return `<h1>Hello Jay!</h1>`;
   }
 
   createCSS() {
@@ -221,16 +221,11 @@ set title(text) {
 
 #### `css(config: CSSConfig): string`
 
-Compiles a JS object into scoped CSS.  
-Supports:
+Compiles a single config object into scoped CSS. Supports a wide range of suffix-based operators:
 
-- CamelCase → kebab-case  
-- Appended `px` to numbers  
-- `Percent` suffix for `%` units  
-- Array shorthand for multi-value props  
-- UK spellings (`colour`, `centre`)  
-- `breakpoint` for `@media (max-width:…)`  
-- `pseudoClass` for states (e.g. `:hover`, `:active`)
+#### Rules
+- CamelCase → kebab-case
+- UK spellings (colour, centre, behaviour)
 
 **Examples**
 
@@ -244,15 +239,6 @@ const config1 = {
   opacity:       0.8
 };
 console.log(this.css(config1));
-```
-Compiles to ->
-```css
-.box {
-  display: flex;
-  flex-direction: column;
-  padding: 10px;
-  opacity: 0.8;
-}
 ```
 
 Using arrays, percent, and media:
@@ -270,20 +256,6 @@ const config2 = {
 };
 console.log(this.css(config2));
 ```
-Compiles to ->
-```css
-.container {
-  color: white;
-  border: 2px solid black;
-  border-radius: 4px 8px;
-  width: 75%;
-}
-@media (max-width: 600px) {
-  .container {
-    padding: 16px 32px;
-  }
-}
-```
 
 Pseudo-class:
 ```js
@@ -295,12 +267,37 @@ const config3 = {
 };
 console.log(this.css(config3));
 ```
-Compiles to ->
-```css
-.btn:hover {
-  background: var(--blue200);
-}
-```
+
+### CSSConfig Operator Reference
+
+| Operator      | CSS Output                                   | Example Config                 | Compiled CSS Snippet                                      |
+|--------------------------|----------------------------------------------|------------------------------------|-----------------------------------------------------------|
+| *(default number)*       | `px` appended (except `0`)                   | `margin: 16`                       | `margin: 16px;`                                           |
+| Percent                  | `%`                                          | `widthPercent: 50`                 | `width: 50%;`                                             |
+| Var                      | `var(--token)`                               | `colourVar: "blue100"`             | `color: var(--blue100);`                                  |
+| Url                      | `url(...)`                                   | `backgroundImageUrl: "hero.jpg"`   | `background-image: url(hero.jpg);`                        |
+| Calc                     | `calc(...)`                                  | `widthCalc: "100% - 32px"`         | `width: calc(100% - 32px);`                               |
+| Em                       | `em`                                         | `paddingTopEm: 2.3`                | `padding-top: 2.3em;`                                     |
+| Rem                      | `rem`                                        | `marginRem: 1.5`                   | `margin: 1.5rem;`                                         |
+| Vw / Vh / Vmin / Vmax    | `vw` / `vh` / `vmin` / `vmax`                | `heightVh: 80`                     | `height: 80vh;`                                           |
+| Ch / Ex                  | `ch` / `ex`                                  | `textIndentCh: 2`                  | `text-indent: 2ch;`                                       |
+| Pt / Pc                  | `pt` / `pc`                                  | `fontSizePt: 12`                   | `font-size: 12pt;`                                        |
+| In / Cm / Mm             | `in` / `cm` / `mm`                           | `widthCm: 10`                      | `width: 10cm;`                                            |
+| Fr                       | `fr` (Grid)                                  | `columnFr: 1`                      | `grid-template-columns: 1fr;`                             |
+| S / Ms                   | `s` / `ms` (Time)                            | `transitionDurationS: 0.3`         | `transition-duration: 0.3s;`                              |
+| Deg / Rad / Grad / Turn  | `deg` / `rad` / `grad` / `turn` (Angle)      | `rotateDeg: 45`                    | `transform: rotate(45deg);`                               |
+| Dpi / Dpcm / Dppx        | `dpi` / `dpcm` / `dppx` (Resolution)         | `printResDpi: 300`                 | `print-resolution: 300dpi;`                               |
+| Raw strings / Keywords   | passed through as-is                         | `display: "flex"`                  | `display: flex;`                                          |
+| Array shorthand          | space-separated multi-value                  | `padding: [8,16]`                  | `padding: 8px 16px;`                                      |
+| Boolean helpers          | inject default rule (e.g. border)            | `border: true`                     | `border: 1px solid var(--border-color);`                  |
+| Unitless props           | no units                                     | `opacity: 0.5`                     | `opacity: 0.5;`                                           |
+| pseudoClass              | pseudo-selector state                        | `pseudoClass: "hover"`             | `.my-class:hover { … }`                                   |
+| breakpoint (in `media`)  | `@media (max-width: …px)`                    | `media: { breakpoint:600, padding:8 }` | `@media (max-width:600px){.my-class{padding:8px;}}` |
+
+
+<br>
+
+### HTTP Requests API
 
 #### `request<T>(url: string, method: "GET"|"POST", data?: object): Promise<T>`
 
@@ -358,4 +355,3 @@ Jay is licensed under the **Apache 2.0 License**. Contributions are welcome!
 4. Open a Pull Request  
 
 For issues or feedback, please open an issue or email the maintainer.  
-```
