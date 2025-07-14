@@ -21,16 +21,18 @@ import { Effects } from "./effects.js";
  * 
  * ## Overview
  * This class handles the core lifecycle and utilities of a component:
+ * - Calls `beforeRender()` hook before rendering for pre render logic
  * - Attaches an open shadow root  
  * - Injects HTML and CSS via `render()`  
  * - Provides JSON and multipart HTTP helpers (`request()`, `submitForm()`)  
  * - Offers a `css()` helper for building scoped styles  
- * - Calls `hook()` after render to wire up interactivity  
+ * - Calls `afterRender()` hook after rendering to wire up interactivity  
  * 
  * Subclasses must override three methods:
+ * - `beforeRender(): void` — runs before DOM/CSS injection to add logic  
  * - `createHTML(): string` — returns the component’s inner markup  
  * - `createCSS(): string` — returns component-scoped CSS rules  
- * - `hook(): void`      — runs after DOM/CSS injection to add event listeners or logic  
+ * - `afterRender(): void` — runs after DOM/CSS injection to add event listeners or logic  
  * 
  * ## Properties
  * - **design** (`Design`) — style builder, including default host rules  
@@ -47,10 +49,10 @@ import { Effects } from "./effects.js";
  * - **css(config: CSSConfig): string**  
  *   Compiles a CSSConfig object into a CSS block.  
  * 
- * - **request<T>(url: string, method: "GET" | "POST", data?: object): Promise<T>**  
+ * - **request<ApiResponse<T>>(url: string, method: "GET" | "POST", data?: object): Promise<T>**  
  *   Sends a JSON GET/POST and returns the parsed response.  
  * 
- * - **submitForm<T>(url: string, data: HTMLFormElement \| FormData \| Record<string, any>): Promise<T>**  
+ * - **submitForm<ApiResponseT>(url: string, data: HTMLFormElement \| FormData \| Record<string, any>): Promise<T>**  
  *   Converts input into `FormData`, POSTS as multipart, and parses JSON.  
  * 
  * ## Example
@@ -63,7 +65,7 @@ import { Effects } from "./effects.js";
  *   }
  * 
  *   createCSS(): string {
- *     return this.css({
+ *     return {
  *       class: "btn",
  *       background: "blue100",
  *       colour: "white",
@@ -72,11 +74,10 @@ import { Effects } from "./effects.js";
  *       media: {
  *           size: 600,
  *           fontSize: 16
- *       }
- *     });
+ *      );
  *   }
  * 
- *   hook(): void {
+ *   afterRender(): void {
  *     const btn = this.shadowRoot!.querySelector("button")!;
  *     btn.addEventListener("click", () => alert(this.greeting));
  *   }
@@ -188,10 +189,11 @@ export abstract class Comp extends HTMLElement {
      * Injects the component’s HTML and CSS into its shadow root and re-attaches logic.
      * 
      * ### Behaviour
+     *  - If `beforeRender()` is implemented, invokes it immediately before DOM injection.
      * - Calls `createHTML()` to get the latest HTML fragment.  
      * - Calls `createCSS()` to get the latest CSS string.  
      * - Sets `shadowRoot.innerHTML` to the combined template (via `createTemplate`).  
-     * - If `hook()` is implemented, invokes it immediately after DOM injection.
+     * - If `afterRender()` is implemented, invokes it immediately after DOM injection.
      * - Throws an Error if the shadow root is unavailable.
      * 
      * ### Throws
@@ -215,11 +217,13 @@ export abstract class Comp extends HTMLElement {
     public render(): void {
         if (!this.shadowRoot) throw new Error("Shadow root is not available.");
 
+        if (typeof this.beforeRender === "function") this.beforeRender();
+
         this.shadowRoot.innerHTML = this.createTemplate(
             this.createHTML(), this.compileCSSObjects(this.createCSS())
         );
 
-        if (typeof this.hook === "function") this.hook();
+        if (typeof this.afterRender === "function") this.afterRender();
     }
 
     /**
@@ -282,13 +286,15 @@ export abstract class Comp extends HTMLElement {
      */
     update(newHTML?: string, newCSS?: Array<CSSConfig>): void {
         if (!this.shadowRoot) throw new Error("No shadow root");
+
+        if (typeof this.beforeRender === "function") this.beforeRender();
         
         const html = newHTML || this.createHTML();
         const css  = newCSS || this.createCSS();
        
         this.shadowRoot.innerHTML = this.createTemplate(html, this.compileCSSObjects(css));
         
-        if (typeof this.hook === "function") this.hook();
+        if (typeof this.afterRender === "function") this.afterRender();
     }
 
     /**
@@ -479,7 +485,7 @@ export abstract class Comp extends HTMLElement {
     protected abstract createCSS(): Array<CSSConfig> | CSSConfig;
 
     /**
-     * ## hook
+     * ## afterRender
      * 
      * Wires up component-specific logic after rendering.
      * 
@@ -493,7 +499,7 @@ export abstract class Comp extends HTMLElement {
      * 
      * ### Example
      * ```js
-     * hook() {
+     * afterRender() {
      *   const btn = this.shadowRoot.querySelector('button');
      *   btn.addEventListener('click', () => {
      *     console.log('Clicked!', this.text);
@@ -501,5 +507,26 @@ export abstract class Comp extends HTMLElement {
      * }
      * ```
      */
-    protected abstract hook(): void;
+    protected abstract afterRender(): void;
+
+    /**
+     * ## afterRender
+     * 
+     * Wires up component-specific logic before rendering.
+     * 
+     * ### Behaviour
+     * - Must be overridden by subclasses.
+     * - Called automatically before `render()` injects HTML & CSS.
+     * 
+     * ### Returns
+     * - `void`
+     * 
+     * ### Example
+     * ```js
+     * beforeRender() {
+     *   // example
+     * }
+     * ```
+     */
+    protected abstract beforeRender(): void;
 }

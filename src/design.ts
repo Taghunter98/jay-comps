@@ -97,7 +97,7 @@ ${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
             let value: CSSValue = css[key];
             const {propKey, propValue} = this.parseProperties(key, value)
 
-            cssString += `\n  ${this.americanise(propKey)}: ${this.americanise(propValue)};`;
+            cssString += `\n  ${propKey}: ${propValue};`;
         }
 
         return cssString;
@@ -172,7 +172,7 @@ ${selector} {${innerCSS}}
             Var: "var", Em: "em", Rem: "rem", Vw: "vw", Vh: "vh", Vmin: "vmin", Vmax: "vmax", Ch: "ch", Ex: "ex", Pt: "pt", Pc: "pc", In: "in", Cm: "cm", Mm: "mm", Fr: "fr", S: "s", Ms: "ms", Deg: "deg", Rad: "rad", Grad: "grad", Turn: "turn", Dpi: "dpi", Dpcm: "dpcm", Dppx: "dppx"
         };
 
-        const UNITLESS_PROPERTIES = ["opacity","z-index","line-height","flex","order"];
+        const UNITLESS_PROPERTIES = ["opacity","z-index","line-height","flex","order", "flex-grow", "flex-shrink"];
 
         for (const k of Object.keys(OPERATORS)) if (key.endsWith(k)) {
             suffix = k; 
@@ -181,7 +181,7 @@ ${selector} {${innerCSS}}
             break;
         }
 
-        propKey = this.camelToKebab(key);
+        propKey = this.camelToKebab(this.americanise(key));
         propValue = this.americanise(propValue);
 
         if (Array.isArray(value)) 

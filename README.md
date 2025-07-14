@@ -34,6 +34,10 @@ npm install
 npx tsc
 ```
 
+<br>
+
+## Bundling with Webpack
+
 Ensure your `package.json` includes:
 ```json
 {
@@ -41,14 +45,10 @@ Ensure your `package.json` includes:
 }
 ```
 
-<br>
-
-## Bundling with Webpack
-
 **index.js**  
 ```js
 import { Comp } from "jay-comp";
-import "./helloworld.js";  // Your custom Comps
+import "./helloworld.js";  // Your custom components
 ```
 
 **webpack.config.cjs**  
@@ -91,13 +91,13 @@ class HelloWorld extends Comp {
   }
 
   createCSS() {
-    return this.css({
-      class:      "heading",
-      colour:     "blue100",
-      fontSize:   24,
+    return {
+      class: "heading",
+      colour: "#1F276E",
+      fontSizePt: 24,
       breakpoint: 600,
-      padding:    [8, 16]
-    });
+      padding: [8, 16]
+    };
   }
 
   hook() {
