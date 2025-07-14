@@ -12,7 +12,7 @@
 /**
  * Custom types for CSSValues and CSSConfig objects
  */
-export type CSSValue = string | number | boolean | null | Array<number> | undefined;
+export type CSSValue = string | number | boolean | null | Array<number|string> | undefined;
 export type CSSConfig = Record<string, CSSValue>;
 
 export class Design {

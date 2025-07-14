@@ -9,7 +9,7 @@
  * Licence:     Apache 2.0
  */
 
-import { API } from './api.js';
+import { API, ApiResponse } from './api.js';
 import { CSSConfig, Design } from "./design.js";
 import { Effects } from "./effects.js";
 
@@ -310,26 +310,33 @@ export abstract class Comp extends HTMLElement {
      * - `data?` (`object`): request payload for POST; ignored for GET.
      *
      * ### Returns
-     * `Promise<T>` – the deserialised JSON response.
+     * `Promise<ApiResponseT>` – the deserialised JSON response.
+     * - `ok`: boolean
+     * - `status`: number
+     * - `data`?: T
+     * - `error`?: string
      *
      * ### Example
-     * ```js
-     * async login() {
-     *   const creds = { user: "alice", pass: "s3cret" };
-     *   const resp = await this.request("/api/login", "POST", creds);
-     *   console.log("JWT =", resp.token);
-     * ```
      * ```ts
+     * // GET
+     * const usersResp = await this.request<User[]>("/api/users", "GET");
+     * if (usersResp.ok) {
+     *     console.log("Got users:", usersResp.data);
+     * } else {
+     *    console.error("Fetch users failed:", usersResp.status, usersResp.error);
+     * }
      * 
-     * // Typescript
-     * async login() {
-     *   const creds = { user: "alice", pass: "s3cret" };
-     *   const resp = await this.request<{ token: string }>("/api/login", "POST", creds);
-     *   console.log("JWT =", resp.token);
+     * // POST
+     * const loginResp = await this.request<{ token: string }>("/api/login", "POST",{ user: "alice", pass: "s3cret" });
+     * 
+     * if (loginResp.ok) {
+     *    console.log("JWT =", loginResp.data.token);
+     * } else {
+     *    console.error("Login error:", loginResp.status, loginResp.error);
      * }
      * ```
      */
-    public async request<T> (url: string, method: "GET" | "POST", data?: object): Promise<T> {
+    public async request<T> (url: string, method: "GET" | "POST", data?: object): Promise<ApiResponse<T>> {
         return this.api.request<T>(url, method, data);
     }
     
@@ -391,7 +398,7 @@ export abstract class Comp extends HTMLElement {
      * );
      * ```
      */
-    public async submitForm<T>(url: string, data: HTMLFormElement | FormData | Record<string, any>): Promise<T> {
+    public async submitForm<T>(url: string, data: HTMLFormElement | FormData | Record<string, any>): Promise<ApiResponse<T>> {
         let formData: FormData;
         
         if (data instanceof HTMLFormElement) formData = new FormData(data);
@@ -469,7 +476,7 @@ export abstract class Comp extends HTMLElement {
      * }
      * ```
      */
-    protected abstract createCSS(): Array<CSSConfig>;
+    protected abstract createCSS(): Array<CSSConfig> | CSSConfig;
 
     /**
      * ## hook

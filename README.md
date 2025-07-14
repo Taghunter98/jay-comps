@@ -288,8 +288,7 @@ console.log(this.css(config3));
 | Deg / Rad / Grad / Turn  | `deg` / `rad` / `grad` / `turn` (Angle)      | `rotateDeg: 45`                    | `transform: rotate(45deg);`                               |
 | Dpi / Dpcm / Dppx        | `dpi` / `dpcm` / `dppx` (Resolution)         | `printResDpi: 300`                 | `print-resolution: 300dpi;`                               |
 | Raw strings / Keywords   | passed through as-is                         | `display: "flex"`                  | `display: flex;`                                          |
-| Array shorthand          | space-separated multi-value                  | `padding: [8,16]`                  | `padding: 8px 16px;`                                      |
-| Boolean helpers          | inject default rule (e.g. border)            | `border: true`                     | `border: 1px solid var(--border-color);`                  |
+| Array shorthand          | space-separated multi-value                  | `padding: [8,16]`                  | `padding: 8px 16px;`                  |
 | Unitless props           | no units                                     | `opacity: 0.5`                     | `opacity: 0.5;`                                           |
 | pseudoClass              | pseudo-selector state                        | `pseudoClass: "hover"`             | `.my-class:hover { … }`                                   |
 | breakpoint (in `media`)  | `@media (max-width: …px)`                    | `media: { breakpoint:600, padding:8 }` | `@media (max-width:600px){.my-class{padding:8px;}}` |
