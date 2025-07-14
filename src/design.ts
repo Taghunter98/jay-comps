@@ -94,14 +94,10 @@ ${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
 
         for (let key in css) {
             if (key === "class" || key == "pseudoClass" || key == "media") continue;
-            let cssValue: CSSValue = css[key];
-            cssValue = this.check(key, cssValue);
-            this.isPercent(key) ? key = this.convertPercent(key) : key;
-            this.isVar(key) ? key = this.convertVar(key) : key;
-            key = this.camelToKebab(key);
+            let value: CSSValue = css[key];
+            const {propKey, propValue} = this.parseProperties(key, value)
 
-            cssString += `
-\t${this.americanise(key)}: ${this.americanise(cssValue)};`;
+            cssString += `\n  ${this.americanise(propKey)}: ${this.americanise(propValue)};`;
         }
 
         return cssString;
@@ -112,64 +108,33 @@ ${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
      * 
      * Works by getting the breakpoint and compiling all fields within the object.
      * making use of the compileCSS method.
+     * 
+     * The breakpoint keyword is removed to allow for reusability.
      */
-    private compileMedia(media: CSSConfig, parentClass?: CSSValue, parentPseudo?: CSSValue): string {
-        let cssString = "";
+    private compileMedia(media: CSSConfig, parentClass?: CSSValue, parentPseudo?: CSSValue
+    ): string {
+        const { breakpoint: rawSize, ...inner } = media;
+        const sizeNum =
+            typeof rawSize === "number" ? rawSize : parseInt(String(rawSize), 10);
 
-        const rawSize = media.breakpoint;
-        const breakpoint = typeof rawSize === "number" ? rawSize : parseInt(String(rawSize), 10);
-        if (isNaN(breakpoint)) {
+        if (isNaN(sizeNum)) {
             console.warn("Media block missing a numeric size:", media);
             return "";
         }
 
-        delete media.breakpoint;
-        const cls = media.class || parentClass;
+        const cls    = media.class || parentClass;
         const pseudo = media.pseudoClass || parentPseudo;
         const selector = `.${cls}${pseudo ? `:${pseudo}` : ""}`;
 
-        cssString += `
-@media (max-width: ${breakpoint}px) { 
-\t${selector} {${this.compileCSS(media)}}}\n`;
+        const innerCSS = this.compileCSS(inner as CSSConfig);
 
-        return cssString;
+        return `
+@media (max-width: ${sizeNum}px) {
+    ${selector} {
+${innerCSS}
     }
-
-    /**
-     * Helper method checks CSSConfig values and returns valid CSS properies.
-     */
-    private check(key: string, value: CSSValue): string | CSSValue {
-        if (typeof value === 'number') return this.checkInteger(key, value);
-        else if (Array.isArray(value)) return this.convertArrays(key, value);
-        else if (this.isVar(key)) return `var(--${value})`;
-        else return value;
-    }
-
-    /**
-     * Helper method checks integers and returns valid CSS properties.
-     */
-    private checkInteger(key: string, value: number): string | CSSValue {
-        if (value === 0) return 0;
-        if (this.isPercent(key)) return `${value}%`;
-        
-        switch (key) {
-        case "opacity": 
-        case "fontWeight": return value + "pt"; 
-        case "top": 
-        case "bottom": 
-        case "left": 
-        case "right":
-        case "lineHeight": 
-        case "zIndex":
-        case "flexGrow":
-        case "flexShrink":
-        case "order":
-        case "aspectRatio":
-            return value;
-        }
-        
-        return `${value}px`;
-    }
+}\n`;
+    }  
 
     /**
      * Helper method converts camel case variables to kebab case.
@@ -193,41 +158,54 @@ ${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
         return convert[textValue] || textValue;
     }
 
-    /**
-     * Helper method converts arrays into CSS properties.
-     */
-    private convertArrays(key: string, values: Array<CSSValue>): string {
-        let cssStr: string = '';
+    private parseProperties(key: string, value: CSSValue): {propKey: string, propValue: string} {
+        let propKey = "", propValue = "", suffix = "", unit = "";
 
-        for (let val in values ) typeof values[val] == "number" ? 
-            cssStr += (this.checkInteger(key, values[val]) + " ") :
-            cssStr += values[val] + " ";
+        const OPERATORS: Record<string, string> = {
+            Var: "var", Em: "em", Rem: "rem",  Vw: "vw", Vh: "vh", Vmin: "vmin",
+            Vmax: "vmax", Ch: "ch", Ex: "ex", Pt: "pt", Pc: "pc", In: "in",  Cm: "cm", Mm: "mm", Fr: "fr", S: "s", Ms: "ms", Deg: "deg",
+            Rad: "rad", Grad: "grad", Turn: "turn", Dpi: "dpi",  Dpcm: "dpcm",
+            Dppx: "dppx"
+        };
 
-        return cssStr;
-    }
-    
-    /**
-     * Helper method checks if key is a percentage.
-     */
-    private isPercent(key: string): boolean {
-        return key.match(/Percent/) ? true : false;
-    }
+        const UNITLESS_PROPERTIES = ["opacity","z-index","line-height","flex","order"];
 
-    /**
-     * Helper method checks if key is a CSS variable.
-     */
-    private isVar(key: string): boolean {
-        return key.match(/Var/) ? true : false;
-    }
-    
-    /**
-     * Helper methods to convert operators to valid CSS properties.
-     */
-    private convertPercent(key: string): string {
-        return key.replace(/Percent/g, '').toLowerCase();
-    }
+        // Grab operators if exist
+        for (const k of Object.keys(OPERATORS)) if (key.endsWith(k)) {
+            suffix = k; 
+            unit = OPERATORS[k]; 
+            key = key.slice(0, -k.length);
+            break;
+        }
 
-    private convertVar(key: string): string {
-        return key.replace(/Var/g, '').toLowerCase();
+        // Convert to kebab case
+        propKey = this.camelToKebab(key);
+        propValue = this.americanise(propValue);
+
+        // Handle arrays
+        if (Array.isArray(value)) 
+            propValue = (value as CSSValue[])
+                .map(v => this.parseProperties(propKey + suffix, v).propValue)
+                .join(" ");
+        
+        // Handle 0
+        else if (typeof value === "number" && value === 0) propValue = "0";
+
+        // Handle strings
+        else if (typeof value === "string") {
+            if (suffix === "Var")  propValue = `var(--${value})`;
+            else if (suffix === "Url")  propValue = `url(${value})`;
+            else if (suffix === "Calc") propValue = `calc(${value})`;
+            else propValue = value;
+        }
+
+        // Handle integers - default to px
+        else {
+            if (unit) propValue = `${value}${unit}`;
+            else if (UNITLESS_PROPERTIES.includes(propKey)) propValue = String(value);
+            else propValue = `${value}px`;
+        }
+
+        return {propKey, propValue}
     }
 }
