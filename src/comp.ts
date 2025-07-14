@@ -418,6 +418,108 @@ export abstract class Comp extends HTMLElement {
     }
 
     /**
+     * ## getById
+     * 
+     * Retrieves an element from the shadow DOM by its ID.
+     * 
+     * ### Behaviour
+     * - Strips a leading `#` if provided.  
+     * - Delegates to `shadowRoot.getElementById`.  
+     * - Returns `null` when no matching element is found.
+     * 
+     * ### Type Parameters
+     * - `T` – The expected element type (defaults to `HTMLElement`).
+     * 
+     * ### Parameters
+     * - `id` (`string`):  
+     *   The identifier of the element, with or without a leading `#`.
+     * 
+     * ### Returns
+     * `T | null` – The element matching the ID, or `null` if none exists.
+     * 
+     * ### Examples
+     * ```ts
+     * // Lookup without '#'
+     * const btn = this.getById<HTMLButtonElement>('submitBtn');
+     * btn?.addEventListener('click', () => console.log('Clicked'));
+     * 
+     * // Lookup with '#'
+     * const input = this.getById<HTMLInputElement>('#usernameInput');
+     * if (input) input.value = 'alice';
+     * ```
+     */
+    protected getById<T extends Element = HTMLElement>(id: string): T | null {
+        const clean = id.startsWith('#') ? id.slice(1) : id;
+        return this.shadowRoot!.getElementById(clean) as T | null;
+    }
+
+    /**
+     * ## query
+     * 
+     * Selects the first element in the shadow DOM matching a CSS selector.
+     * 
+     * ### Behaviour
+     * - Delegates to `shadowRoot.querySelector`.  
+     * - Returns `null` when no matching element is found.
+     * 
+     * ### Type Parameters
+     * - `T` – The expected element type (defaults to `Element`).
+     * 
+     * ### Parameters
+     * - `sel` (`string`):  
+     *   A valid CSS selector (e.g. `'.foo'`, `'button'`, `'#bar'`, `[data-test]`, etc.).
+     * 
+     * ### Returns
+     * `T | null` – The first matching element, or `null` if none exists.
+     * 
+     * ### Examples
+     * ```ts
+     * // Query a single item
+     * const item = this.query<HTMLLIElement>('ul > li.active');
+     * 
+     * // Query an input by attribute
+     * const email = this.query<HTMLInputElement>('input[name="email"]');
+     * ```
+     */
+    protected query<T extends Element = Element>(sel: string): T | null {
+        return this.shadowRoot!.querySelector(sel) as T | null;
+    }
+
+    /**
+     * ## queryAll
+     * 
+     * Selects all elements in the shadow DOM matching a CSS selector.
+     * 
+     * ### Behaviour
+     * - Delegates to `shadowRoot.querySelectorAll`.  
+     * - Always returns a `NodeListOf<T>`, which may be empty.
+     * 
+     * ### Type Parameters
+     * - `T` – The expected element type (defaults to `Element`).
+     * 
+     * ### Parameters
+     * - `sel` (`string`):  
+     *   A valid CSS selector for matching multiple elements.
+     * 
+     * ### Returns
+     * `NodeListOf<T>` – A live list of all matching elements (empty if none).
+     * 
+     * ### Examples
+     * ```ts
+     * // Get all active list items
+     * const items = this.queryAll<HTMLLIElement>('ul > li.active');
+     * items.forEach(li => li.style.color = 'red');
+     * 
+     * // Get every button in the shadow root
+     * const buttons = this.queryAll<HTMLButtonElement>('button');
+     * buttons.forEach(btn => (btn.disabled = true));
+     * ```
+     */
+    protected queryAll<T extends Element = Element>(sel: string): NodeListOf<T> {
+        return this.shadowRoot!.querySelectorAll(sel) as NodeListOf<T>;
+    }
+
+    /**
      * Helper method that creates a template from component's HTML/CSS
      */
     private createTemplate(html: string, css: string): string {
