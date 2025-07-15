@@ -169,10 +169,20 @@ ${selector} {${innerCSS}}
         let suffix = "", unit = "";
 
         const OPERATORS: Record<string, string> = {
-            Var: "var", Em: "em", Rem: "rem", Vw: "vw", Vh: "vh", Vmin: "vmin", Vmax: "vmax", Ch: "ch", Ex: "ex", Pt: "pt", Pc: "pc", In: "in", Cm: "cm", Mm: "mm", Fr: "fr", S: "s", Ms: "ms", Deg: "deg", Rad: "rad", Grad: "grad", Turn: "turn", Dpi: "dpi", Dpcm: "dpcm", Dppx: "dppx"
+        Percent: "%", Var: "var", Url: "url", Calc: "calc",
+        Em: "em", Rem: "rem", Vw: "vw", Vh: "vh", Vmin: "vmin",
+        Vmax: "vmax", Ch: "ch", Ex: "ex", Pt: "pt", Pc: "pc", 
+        In: "in", Cm: "cm", Mm: "mm", Fr: "fr", S: "s", Ms: "ms",
+        Deg: "deg", Rad: "rad", Grad: "grad", Turn: "turn",
+        Dpi: "dpi", Dpcm: "dpcm", Dppx: "dppx", Q: "q", 
+        Hz: "Hz", KHz: "kHz"
         };
 
-        const UNITLESS_PROPERTIES = ["opacity","z-index","line-height","flex","order", "flex-grow", "flex-shrink"];
+        const UNITLESS_PROPERTIES = [
+            "opacity", "z-index", "line-height", "font-weight",
+            "flex", "order", "flex-grow", "flex-shrink", "grid-row",
+            "grid-column", "column-count", "widows", "orphans", "tab-size"
+        ];
 
         for (const k of Object.keys(OPERATORS)) if (key.endsWith(k)) {
             suffix = k; 
