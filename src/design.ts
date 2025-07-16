@@ -106,32 +106,48 @@ ${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
     /**
      * Method compiles a CSS media query string from a CSS Config object.
      * 
-     * Works by getting the breakpoint and compiling all fields within the object.
-     * making use of the compileCSS method.
+     * Works by finding the breakpoint with the 'Bp' operator and uses the CSS key to create
+     * a media query heading.
      * 
-     * The breakpoint keyword is removed to allow for reusability.
+     * The 'Bp' value is removed to allow for the parseProperties function to compile the value.
+     * 
+     * The media query is then assembled and returned.
      */
     private compileMedia(media: CSSConfig, parentClass?: CSSValue, parentPseudo?: CSSValue
     ): string {
-        const { breakpoint: rawSize, ...inner } = media;
-        const sizeNum =
-            typeof rawSize === "number" ? rawSize : parseInt(String(rawSize), 10);
+        const bp = Object.entries(media).find(([k]) => k.toLowerCase().endsWith("bp"));
+        if (!bp) throw new Error("Media config must include a *Bp key");
+        
+        const [breakKey, breakVal] = bp as [string, CSSValue];
 
-        if (isNaN(sizeNum)) {
-            console.warn("Media block missing a numeric size:", media);
-            return "";
+        const {propKey: headingProp, propValue: headingVal} = this.parseBreakpoint(breakKey, breakVal);
+
+        const inner = { ...media };
+        for (const k of Object.keys(media)) if (k.toLowerCase().endsWith("bp")) {
+            delete (inner as any)[k];
         }
 
-        const cls    = media.class || parentClass;
+        const cls = media.class || parentClass;
         const pseudo = media.pseudoClass || parentPseudo;
         const selector = `.${cls}${pseudo ? `:${pseudo}` : ""}`;
+
         const innerCSS = this.compileCSS(inner as CSSConfig);
 
         return `
-@media (max-width: ${sizeNum}px) {
-${selector} {${innerCSS}}
+@media (${headingProp}: ${headingVal}) {
+  ${selector} {
+    ${innerCSS}
+  }
 }`;
-    }  
+    }
+
+    /**
+     * Helper method removes the 'Bp' operator and compiles and returns the CSS properties.
+     */
+    private parseBreakpoint(key: string, val: CSSValue): {propKey: string, propValue: string} {
+        const coreKey = key.slice(0, -"Bp".length);
+        return this.parseProperties(coreKey, val);
+    }
 
     /**
      * Helper method converts camel case variables to kebab case.
@@ -169,10 +185,20 @@ ${selector} {${innerCSS}}
         let suffix = "", unit = "";
 
         const OPERATORS: Record<string, string> = {
-            Var: "var", Em: "em", Rem: "rem", Vw: "vw", Vh: "vh", Vmin: "vmin", Vmax: "vmax", Ch: "ch", Ex: "ex", Pt: "pt", Pc: "pc", In: "in", Cm: "cm", Mm: "mm", Fr: "fr", S: "s", Ms: "ms", Deg: "deg", Rad: "rad", Grad: "grad", Turn: "turn", Dpi: "dpi", Dpcm: "dpcm", Dppx: "dppx"
+        Percent: "%", Var: "var", Url: "url", Calc: "calc",
+        Em: "em", Rem: "rem", Vw: "vw", Vh: "vh", Vmin: "vmin",
+        Vmax: "vmax", Ch: "ch", Ex: "ex", Pt: "pt", Pc: "pc", 
+        In: "in", Cm: "cm", Mm: "mm", Fr: "fr", S: "s", Ms: "ms",
+        Deg: "deg", Rad: "rad", Grad: "grad", Turn: "turn",
+        Dpi: "dpi", Dpcm: "dpcm", Dppx: "dppx", Q: "q", 
+        Hz: "Hz", KHz: "kHz"
         };
 
-        const UNITLESS_PROPERTIES = ["opacity","z-index","line-height","flex","order", "flex-grow", "flex-shrink"];
+        const UNITLESS_PROPERTIES = [
+            "opacity", "z-index", "line-height", "font-weight",
+            "flex", "order", "flex-grow", "flex-shrink", "grid-row",
+            "grid-column", "column-count", "widows", "orphans", "tab-size"
+        ];
 
         for (const k of Object.keys(OPERATORS)) if (key.endsWith(k)) {
             suffix = k; 

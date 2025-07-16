@@ -178,17 +178,28 @@ createCSS() {
     class:         "container",
     display:       "flex",
     padding:       [10, 15],
-    breakpoint:    600,
-    flexDirection: "column"
+    media: {
+      maxWidthBp: 600,
+      flexDirction: "column"
+    }
   });
 }
 ```
 
-#### `hook(): void`
+#### `beforeRender(): void`
+
+Run before-render logic:
+```js
+beforeRender() {
+  if (!this.greeting_) this.greeting_ = "Hello World!"
+}
+```
+
+#### `afterRender(): void`
 
 Run post-render logic:
 ```js
-hook() {
+afterRender() {
   this.shadowRoot
     .querySelector(".container")
     .addEventListener("click", () => console.log("Clicked!"));
@@ -202,7 +213,7 @@ Class names convert to kebab-case and prefix `comp-`:
 
 ```js
 static { Comp.register(this); }
-// MyButtonComp → <comp-my-button-comp>
+// MyButtonComp -> <comp-my-button-comp>
 ```
 
 <br>
@@ -219,13 +230,54 @@ set title(text) {
 }
 ```
 
+#### `getById(id: string): HTMLElement | null`
+
+Returns an element from the Shadow DOM by its ID. Automatically strips a leading # if present.
+
+```ts
+// Lookup without '#'
+const btn = this.getById<HTMLButtonElement>('submitBtn');
+btn?.addEventListener('click', () => console.log('Clicked'));
+
+// Lookup with '#'
+const input = this.getById<HTMLInputElement>('#usernameInput');
+if (input) input.value = 'alice';
+```
+
+#### `query(sel: string): Element | null`
+
+Selects the first element matching a given CSS selector.
+
+```ts
+// Select an active list item
+const item = this.query<HTMLLIElement>('ul > li.active');
+
+// Select an input by attribute
+const email = this.query<HTMLInputElement>('input[name="email"]');
+```
+
+#### `queryAll(sel: string): NodeListOf<Element>`
+
+Selects all elements matching a given CSS selector. Returns a live NodeList, even if no matches are found.
+
+```ts
+// Style all active items
+const items = this.queryAll<HTMLLIElement>('ul > li.active');
+items.forEach(li => li.style.color = 'red');
+
+// Disable all buttons in the shadow DOM
+const buttons = this.queryAll<HTMLButtonElement>('button');
+buttons.forEach(btn => btn.disabled = true);
+```
+
 #### `css(config: CSSConfig): string`
 
 Compiles a single config object into scoped CSS. Supports a wide range of suffix-based operators:
 
 #### Rules
-- CamelCase → kebab-case
+- CamelCase -> kebab-case
 - UK spellings (colour, centre, behaviour)
+- Media queries must have a `Bp` keyword for defining breakpoints.
 
 **Examples**
 
@@ -250,7 +302,7 @@ const config2 = {
   borderRadius: [4, 8],
   widthPercent: 75,
   media: {
-    breakpoint: 600,
+    maxWidthBp: 600,
     padding:    [16, 32]
   }
 };
@@ -260,64 +312,64 @@ console.log(this.css(config2));
 Pseudo-class:
 ```js
 const config3 = {
-  class:       "btn",
-  background:  "blue100",
-  pseudoClass: "hover",
-  background:  "blue200"
+  class:          "btn",
+  backgroundVar:  "blue100",
+  pseudoClass:    "hover"
 };
 console.log(this.css(config3));
 ```
 
 ### CSSConfig Operator Reference
 
-| Operator      | CSS Output                                   | Example Config                 | Compiled CSS Snippet                                      |
-|--------------------------|----------------------------------------------|------------------------------------|-----------------------------------------------------------|
-| *(default number)*       | `px` appended (except `0`)                   | `margin: 16`                       | `margin: 16px;`                                           |
-| Percent                  | `%`                                          | `widthPercent: 50`                 | `width: 50%;`                                             |
-| Var                      | `var(--token)`                               | `colourVar: "blue100"`             | `color: var(--blue100);`                                  |
-| Url                      | `url(...)`                                   | `backgroundImageUrl: "hero.jpg"`   | `background-image: url(hero.jpg);`                        |
-| Calc                     | `calc(...)`                                  | `widthCalc: "100% - 32px"`         | `width: calc(100% - 32px);`                               |
-| Em                       | `em`                                         | `paddingTopEm: 2.3`                | `padding-top: 2.3em;`                                     |
-| Rem                      | `rem`                                        | `marginRem: 1.5`                   | `margin: 1.5rem;`                                         |
-| Vw / Vh / Vmin / Vmax    | `vw` / `vh` / `vmin` / `vmax`                | `heightVh: 80`                     | `height: 80vh;`                                           |
-| Ch / Ex                  | `ch` / `ex`                                  | `textIndentCh: 2`                  | `text-indent: 2ch;`                                       |
-| Pt / Pc                  | `pt` / `pc`                                  | `fontSizePt: 12`                   | `font-size: 12pt;`                                        |
-| In / Cm / Mm             | `in` / `cm` / `mm`                           | `widthCm: 10`                      | `width: 10cm;`                                            |
-| Fr                       | `fr` (Grid)                                  | `columnFr: 1`                      | `grid-template-columns: 1fr;`                             |
-| S / Ms                   | `s` / `ms` (Time)                            | `transitionDurationS: 0.3`         | `transition-duration: 0.3s;`                              |
-| Deg / Rad / Grad / Turn  | `deg` / `rad` / `grad` / `turn` (Angle)      | `rotateDeg: 45`                    | `transform: rotate(45deg);`                               |
-| Dpi / Dpcm / Dppx        | `dpi` / `dpcm` / `dppx` (Resolution)         | `printResDpi: 300`                 | `print-resolution: 300dpi;`                               |
-| Raw strings / Keywords   | passed through as-is                         | `display: "flex"`                  | `display: flex;`                                          |
-| Array shorthand          | space-separated multi-value                  | `padding: [8,16]`                  | `padding: 8px 16px;`                  |
-| Unitless props           | no units                                     | `opacity: 0.5`                     | `opacity: 0.5;`                                           |
-| pseudoClass              | pseudo-selector state                        | `pseudoClass: "hover"`             | `.my-class:hover { … }`                                   |
-| breakpoint (in `media`)  | `@media (max-width: …px)`                    | `media: { breakpoint:600, padding:8 }` | `@media (max-width:600px){.my-class{padding:8px;}}` |
-
+| Operator               | CSS Output                          | Example Config                          | Compiled CSS Snippet                              |
+|------------------------|--------------------------------------|------------------------------------------|---------------------------------------------------|
+| *(default number)*     | `px` appended (except `0`)           | `margin: 16`                             | `margin: 16px;`                                   |
+| Percent                | `%`                                  | `widthPercent: 50`                       | `width: 50%;`                                     |
+| Var                    | `var(--…)`                           | `colorVar: "blue100"`                    | `color: var(--blue100);`                          |
+| Url                    | `url(...)`                           | `backgroundImageUrl: "hero.jpg"`         | `background-image: url(hero.jpg);`                |
+| Calc                   | `calc(...)`                          | `widthCalc: "100% - 32px"`               | `width: calc(100% - 32px);`                       |
+| Em / Rem               | `em` / `rem`                         | `paddingEm: 1.5`, `marginRem: 2`         | `padding: 1.5em;`, `margin: 2rem;`                |
+| Vw / Vh / Vmin / Vmax  | viewport units                      | `heightVh: 80`, `gapVmax: 2`             | `height: 80vh;`, `gap: 2vmax;`                    |
+| Ch / Ex                | character-based units               | `textIndentCh: 2`, `fontSizeEx: 1`       | `text-indent: 2ch;`, `font-size: 1ex;`            |
+| Pt / Pc                | print-based units                   | `fontSizePt: 12`                         | `font-size: 12pt;`                                |
+| In / Cm / Mm / Q       | absolute/metric lengths             | `widthCm: 10`, `borderQ: 4`              | `width: 10cm;`, `border: 4q;`                     |
+| Fr                     | grid fraction                       | `gridTemplateColumnsFr: [1,2]`           | `grid-template-columns: 1fr 2fr;`                 |
+| S / Ms                 | time units                          | `transitionDurationS: 0.3`, `delayMs: 200`| `transition-duration: 0.3s;`, `delay: 200ms;`     |
+| Deg / Rad / Grad / Turn| angle units                         | `rotateDeg: 45`, `skewRad: 0.5`          | `transform: rotate(45deg);`, `skew(0.5rad);`      |
+| Dpi / Dpcm / Dppx      | resolution units                    | `resolutionDpi: 300`                     | `resolution: 300dpi;`                             |
+| Hz / KHz               | frequency                           | `audioRateHz: 60`, `signalKHz: 2.4`      | `audio-rate: 60Hz;`, `signal: 2.4kHz;`            |
+| Raw strings / Keywords | passed through as-is               | `display: "flex"`                        | `display: flex;`                                  |
+| Array shorthand        | space-separated values              | `padding: [8,16]`                        | `padding: 8px 16px;`                              |
+| pseudoClass            | pseudo-selector suffix              | `pseudoClass: "hover"`                   | `.my-class:hover { … }`                           |
+| Breakpoint operator (`Bp` suffix) | media query header        | `media: { maxWidthBp: 600 }`             | `@media (max-width: 600px) { … }`                 |
 
 <br>
 
 ### HTTP Requests API
 
-#### `request<T>(url: string, method: "GET"|"POST", data?: object): Promise<T>`
+#### `request<T>(url: string, method: "GET"|"POST", data?: object): Promise<ApiResponse<T>>`
 
 Perform JSON fetch with error handling.
-
 ```ts
-// GET users
-interface User { id: number; name: string; }
-const users = await this.request<User[]>("/api/users", "GET");
+// GET
+const usersResp = await this.request<User[]>("/api/users", "GET");
+if (usersResp.ok) {
+    console.log("Got users:", usersResp.data);
+} else {
+   console.error("Fetch users failed:", usersResp.status, usersResp.error);
+}
 
-// POST login
-interface LoginResp { token: string; }
-const login = await this.request<LoginResp>(
-  "/api/login", 
-  "POST", 
-  { user: "alice", pass: "s3cret" }
-);
-console.log("JWT =", login.token);
+// POST
+const loginResp = await this.request<{ token: string }>("/api/login", "POST",{ user: "alice", pass: "s3cret" });
+
+if (loginResp.ok) {
+   console.log("JWT =", loginResp.data.token);
+} else {
+   console.error("Login error:", loginResp.status, loginResp.error);
+}
 ```
 
-#### `submitForm<T>(url: string, data: HTMLFormElement|FormData|object): Promise<T>`
+#### `submitForm<T>(url: string, data: HTMLFormElement|FormData|object): Promise<ApiResponse<T>>`
 
 Send multipart/form-data for uploads.
 
