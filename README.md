@@ -84,29 +84,36 @@ Include in your HTML:
 import { Comp } from "jay-comp";
 
 class HelloWorld extends Comp {
-  greeting_ = "Hello, Jay!";
+    greeting_;
+    
+    beforeRender() {
+        this.greeting_ = "Hello Jay!";
+    }
+    
+    createHTML() {
+        return `<h1 class="heading">${this.greeting_}</h1>`;
+    }
+    
+    createCSS() {
+        return {
+            class: "heading",
+            colour: "#142985",
+            padding: [20, 40],
+            fontSizePt: 48,
+            media: {
+                maxWidthBp: 600,
+                fontSizePt: 24,
+                padding: [8, 16]
+            }
+        };
+    }
 
-  createHTML() {
-    return `<h1>Hello Jay!</h1>`;
-  }
+    afterRender() {
+        this.query("h1")
+            .addEventListener("click", () => alert("This is my first Jay Component!"));
+    }
 
-  createCSS() {
-    return {
-      class: "heading",
-      colour: "#1F276E",
-      fontSizePt: 24,
-      breakpoint: 600,
-      padding: [8, 16]
-    };
-  }
-
-  hook() {
-    this.shadowRoot
-      .querySelector("h1")
-      .addEventListener("click", () => alert(this.greeting_));
-  }
-
-  static { Comp.register(this); }
+    static { Comp.register(this); }
 }
 ```
 
