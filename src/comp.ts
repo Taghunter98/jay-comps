@@ -9,7 +9,7 @@
  * Licence:     Apache 2.0
  */
 
-import { API, ApiResponse } from './api.js';
+import { API, ApiResponse, FetchEntry } from './api.js';
 import { CSSConfig, Design } from "./design.js";
 import { Effects } from "./effects.js";
 
@@ -93,6 +93,8 @@ export abstract class Comp extends HTMLElement {
     private design = new Design();
 
     private static _registry = new Set<string>();
+    protected asyncStore: Record<string, FetchEntry<any>> = {};
+
 
     /**
      * ## register
@@ -415,6 +417,28 @@ export abstract class Comp extends HTMLElement {
         }
 
         return this.api.submitForm<T>(url, formData);
+    }
+
+
+    public fetchOnce<T>(key: string, loader: () => Promise<T>): FetchEntry<T> {
+        let entry = this.asyncStore[key] as FetchEntry<T>;
+        if (entry) return entry;
+        
+        entry = { value: undefined, loading: true, error: undefined };
+        this.asyncStore[key] = entry;
+
+        loader().then(result => {
+            entry.value = result;
+            entry.error = undefined;
+            entry.loading = false;
+            this.update();      
+        }).catch(err => {
+            entry.error = err?.message || err;
+            entry.loading = false;
+            this.update();
+        });
+
+        return entry;
     }
 
     /**
