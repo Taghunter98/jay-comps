@@ -419,7 +419,45 @@ export abstract class Comp extends HTMLElement {
         return this.api.submitForm<T>(url, formData);
     }
 
-
+    /**
+     * ## fetchOnce
+     * 
+     * Fetches data exactly once for a given key and returns a live cache entry
+     * that tracks loading, success and error states. Subsequent calls with the
+     * same key return the cached result instead of re‐invoking the loader.
+     * 
+     * ### Behavior
+     * - On first invocation the fetched data is stored within the component's `asyncStore`.
+     * - On subsequent calls, the data is retrieved from `asyncStore`
+     * 
+     * ### Type Parameters
+     * - `T` – The expected element type.
+     * 
+     * ### Parameters
+     * - `key` (`string`): The desired key from the request response.
+     * - `loader` (`Promise<T>`): A function that returns a `Promise<T>`. Called only once.
+     * 
+     * ### Returns
+     * `FetchEntry<T>` – the fetched response object.
+     *
+     * ### Example
+     * ```ts
+     * 
+     * // TypeScript
+     * createHTML() {
+     *   const { value: fact, loading, error } = this.fetchOnce<string>(
+     *     "catFact",
+     *     () => this.request("/fact", "GET")
+     *          .then(res => res.ok ? res.data.fact : Promise.reject(res.error))
+     *   );
+     *
+     *   if (loading) return `<h1>Loading a random cat fact…</h1>`;
+     *   if (error) return `<h1>Failed to load fact: ${error}</h1>`;
+     *   
+     *   return `<h1 class="fact">${fact}</h1>`;
+     * }
+     * ```
+    */
     public fetchOnce<T>(key: string, loader: () => Promise<T>): FetchEntry<T> {
         let entry = this.asyncStore[key] as FetchEntry<T>;
         if (entry) return entry;
