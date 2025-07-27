@@ -12,7 +12,7 @@
 /**
  * Custom types for CSSValues and CSSConfig objects
  */
-export type CSSValue = string | number | boolean | null | Array<number|string> | undefined;
+export type CSSValue = string | number | boolean | null | Array<number|string> | any;
 export type CSSConfig = Record<string, CSSValue>;
 
 export class Design {
@@ -81,6 +81,10 @@ ${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
             cssText += this.compileMedia(css.media, css.class, css.pseudoClass);
         }
 
+        if (css.keyframes && typeof css.keyframes === "object" && !Array.isArray(css.keyframes)) {
+            cssText += this.compileKeyframes(css.keyframes);
+        }
+
         return cssText;
     }
 
@@ -93,7 +97,12 @@ ${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
         let cssString = "";
 
         for (let key in css) {
-            if (key === "class" || key == "pseudoClass" || key == "media") continue;
+            if (
+                key == "class" 
+                || key == "pseudoClass" 
+                || key == "media" 
+                || key == "keyframes"
+            ) continue;
             let value: CSSValue = css[key];
             const {propKey, propValue} = this.parseProperties(key, value)
 
@@ -102,6 +111,35 @@ ${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
 
         return cssString;
     }
+
+    private compileKeyframes(config: CSSConfig): string {
+        const { name, ...steps } = config;
+        if (!name) throw new Error("Keyframes config must include a name");
+
+        // Build each percentage/from/to block
+        const blocks = Object.entries(steps).map(([step, declarations]) => {
+            const stepName = this.normaliseKeyframe(step);
+
+            // Turn each declaration into "prop: value;"
+            const props = Object.entries(declarations).map(([rawKey, rawVal]) => {
+            const { propKey, propValue } = this.parseProperties(rawKey, rawVal);
+            return `    ${propKey}: ${propValue};`;
+            }).join("\n");
+
+            return `  ${stepName} {\n${props}\n  }`;
+        });
+
+        return `@keyframes ${name} {\n${blocks.join("\n")}\n}`;
+    }
+
+    // Helper to normalise keyframe values
+    private normaliseKeyframe(step: string): string {
+        const lower = step.toLowerCase();
+        if (lower === "from" || lower === "to") return lower;
+        if (/^\d+%$/.test(step)) return step;
+        throw new Error('Invalid keyframe step. Use "from", "to", or "NN%".');
+    }
+  
     
     /**
      * Method compiles a CSS media query string from a CSS Config object.
