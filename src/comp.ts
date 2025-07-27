@@ -480,6 +480,33 @@ export abstract class Comp extends HTMLElement {
         return entry;
     }
 
+    /**
+     * ## publish
+     * 
+     * Dispatches a custom event from this element with an optional payload.
+     * 
+     * ### Behaviour
+     * - Creates and dispatches a `CustomEvent` using `this.dispatchEvent`.  
+     * - Event bubbles (`bubbles: true`) and crosses shadow DOM boundaries (`composed: true`).
+     * 
+     * ### Parameters
+     * - `name` (`string`):  
+     *   The event type/name to publish (e.g. `"data-loaded"`).
+     * - `detail` (`unknown`, optional):  
+     *   Any data to attach to the event’s `detail` property.
+     * 
+     * ### Returns
+     * `void`
+     * 
+     * ### Examples
+     * ```ts
+     * // Notify that user data has loaded
+     * this.publish("user-loaded", { id: 42, name: "Alice" });
+     * 
+     * // Fire a simple ping with no payload
+     * this.publish("ping");
+     * ```
+     */
     protected publish(name: string, detail?: unknown) {
         this.dispatchEvent(new CustomEvent(name, {
             detail: detail,
@@ -488,13 +515,51 @@ export abstract class Comp extends HTMLElement {
         }))
     }
 
+    /**
+     * ## subscribe
+     * 
+     * Registers a listener for a named event on this element (or its descendants).
+     * Listener is garbage collected automatically when listener is deleted.
+     * 
+     * ### Behaviour
+     * - Removes any existing listener for the same `name` before adding a new one.  
+     * - Wraps the user callback so it receives a strongly-typed `CustomEvent<T>`.  
+     * - Stores an unsubscribe function for manual removal or automatic teardown.
+     * 
+     * ### Type Parameters
+     * - `T` – The shape of the event’s `detail` payload.
+     * 
+     * ### Parameters
+     * - `name` (`string`):  
+     *   The event type to listen for (e.g. `"data-loaded"`).  
+     * - `listener` (`(evt: CustomEvent<T>) => void`):  
+     *   Callback invoked with the event when it fires.  
+     * - `options` (`boolean | AddEventListenerOptions`, optional):  
+     *   Standard `addEventListener` options (`capture`, `once`, etc.).  
+     * - `autoCleanup` (`boolean`, default `true`):  
+     *   If true, the listener is automatically removed in `disconnectedCallback`.
+     * 
+     * ### Returns
+     * `() => void` – A function that, when called, removes this listener immediately.
+     * 
+     * ### Examples
+     * ```ts
+     * // Listen for a custom event and log its detail
+     * const unsub = this.subscribe<{ items: number[] }>(
+     *   "data-loaded",
+     *   evt => console.log(evt.detail.items)
+     * );
+     * 
+     * // Manually unsubscribe before removal or leave to be garbage collected
+     * unsub();
+     * ```
+     */
     protected subscribe<T>(
         name: string,
         listener: (evt: CustomEvent<T>) => void,
         options?: boolean | AddEventListenerOptions,
         autoCleanup: boolean = true
     ): () => void {
-        // Check for existing component listner
         if (this.listeners.has(name)) {
             const old = this.listeners.get(name)!;
             this.removeEventListener(name, old, options);
@@ -508,10 +573,32 @@ export abstract class Comp extends HTMLElement {
             this.removeEventListener(name, bound, options);
             this.listeners.delete(name);
         }
-        
+
         if (autoCleanup) this.unsubscribers_.push(unsubscribe);
 
         return unsubscribe;
+    }
+
+    /**
+     * ## disconnectedCallback
+     * 
+     * Lifecycle hook invoked when the element is removed from the document.
+     * 
+     * ### Behaviour
+     * - Calls all stored unsubscribe functions to remove active listeners.  
+     * - Clears internal maps and lists to prevent memory leaks.
+     * 
+     * ### Returns
+     * `void`
+     * 
+     * ### Examples
+     * ```ts
+     * // No manual action needed; all listeners auto-clean up on disconnect.
+     * ```
+     */
+    disconnectedCallback() {
+        this.unsubscribers_.forEach(unsub => unsub());
+        this.unsubscribers_.length = 0;
     }
 
     /**
@@ -728,10 +815,4 @@ export abstract class Comp extends HTMLElement {
      * ```
      */
     protected abstract beforeRender(): void;
-
-
-    disconnectedCallback() {
-        this.unsubscribers_.forEach(unsub => unsub());
-        this.unsubscribers_.length = 0;
-    }
 }
