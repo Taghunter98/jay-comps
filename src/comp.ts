@@ -94,6 +94,8 @@ export abstract class Comp extends HTMLElement {
 
     private static _registry = new Set<string>();
     protected asyncStore: Record<string, FetchEntry<any>> = {};
+    private unsubscribers_: Array<() => void> = [];
+    private listeners = new Map<String, EventListener>();
 
 
     /**
@@ -149,7 +151,6 @@ export abstract class Comp extends HTMLElement {
         this.render();
     }
 
-   
     /**
      * ## host
      * 
@@ -479,6 +480,40 @@ export abstract class Comp extends HTMLElement {
         return entry;
     }
 
+    protected publish(name: string, detail?: unknown) {
+        this.dispatchEvent(new CustomEvent(name, {
+            detail: detail,
+            bubbles: true,
+            composed: true
+        }))
+    }
+
+    protected subscribe<T>(
+        name: string,
+        listener: (evt: CustomEvent<T>) => void,
+        options?: boolean | AddEventListenerOptions,
+        autoCleanup: boolean = true
+    ): () => void {
+        // Check for existing component listner
+        if (this.listeners.has(name)) {
+            const old = this.listeners.get(name)!;
+            this.removeEventListener(name, old, options);
+        }
+
+        const bound = (e: Event) => listener(e as CustomEvent<T>);
+        this.listeners.set(name, bound);
+        this.addEventListener(name, bound, options);
+
+        const unsubscribe = () => {
+            this.removeEventListener(name, bound, options);
+            this.listeners.delete(name);
+        }
+        
+        if (autoCleanup) this.unsubscribers_.push(unsubscribe);
+
+        return unsubscribe;
+    }
+
     /**
      * ## getById
      * 
@@ -693,4 +728,10 @@ export abstract class Comp extends HTMLElement {
      * ```
      */
     protected abstract beforeRender(): void;
+
+
+    disconnectedCallback() {
+        this.unsubscribers_.forEach(unsub => unsub());
+        this.unsubscribers_.length = 0;
+    }
 }
