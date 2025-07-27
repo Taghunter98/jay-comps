@@ -70,6 +70,10 @@ label {font-size: 12px; font-weight: 500; line-height: 16pt;}`;
      * Method compiles base CSS and then appends media queries if applicable.
      */
     public create(css: CSSConfig): string {
+        if (css.keyframes && !css.class && !css.pseudoClass) {
+            return this.compileKeyframes(css.keyframes as any);
+        }
+
         const selector = css.pseudoClass ? 
             `${css.class}:${css.pseudoClass}`: 
             css.class!;
@@ -112,34 +116,44 @@ ${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
         return cssString;
     }
 
+    /**
+     * Method compiles a CSS Keyframes block from a CSS Config object.
+     * 
+     * Works by parsing and compiling each 'block' of keys and properties and calls the
+     * parseProperties API for type validation.
+     * 
+     * The final CSS Keyframes block is built and returned as a string literal.
+     */
     private compileKeyframes(config: CSSConfig): string {
-        const { name, ...steps } = config;
+        const {name, ...keyframes} = config;
         if (!name) throw new Error("Keyframes config must include a name");
 
-        // Build each percentage/from/to block
-        const blocks = Object.entries(steps).map(([step, declarations]) => {
-            const stepName = this.normaliseKeyframe(step);
+        const blocks = Object.entries(keyframes)
+            .map(([key, prop]) => {
+                const props = Object.entries(prop)
+                    .map(([rawKey, rawVal]) => {
+                        const {
+                            propKey, propValue
+                        } = this.parseProperties(rawKey, rawVal);
 
-            // Turn each declaration into "prop: value;"
-            const props = Object.entries(declarations).map(([rawKey, rawVal]) => {
-            const { propKey, propValue } = this.parseProperties(rawKey, rawVal);
-            return `    ${propKey}: ${propValue};`;
+                    return `    ${propKey}: ${propValue};`;
             }).join("\n");
 
-            return `  ${stepName} {\n${props}\n  }`;
+            return `  ${this.parseKeyframe(key)} {\n${props}\n  }`;
         });
 
         return `@keyframes ${name} {\n${blocks.join("\n")}\n}`;
     }
 
     // Helper to normalise keyframe values
-    private normaliseKeyframe(step: string): string {
+    private parseKeyframe(step: string): string {
         const lower = step.toLowerCase();
+
         if (lower === "from" || lower === "to") return lower;
         if (/^\d+%$/.test(step)) return step;
+
         throw new Error('Invalid keyframe step. Use "from", "to", or "NN%".');
     }
-  
     
     /**
      * Method compiles a CSS media query string from a CSS Config object.

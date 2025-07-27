@@ -150,42 +150,7 @@ export abstract class Comp extends HTMLElement {
         this.attachShadow({ mode: "open" });
         this.render();
     }
-
-    /**
-     * ## host
-     * 
-     * Overrides the default `:host` configuration.
-     * 
-     * ### Behaviour:
-     * Nested components by default scale to fill the width of their parent due to 
-     * the restrictions of Shadow DOM components.
-     * 
-     * **Default config**
-     * ```css
-     * 
-     * :host {display: block; width: 100%; box-sizing: border-box;}
-     * ```
-     * 
-     * ### Parameters:
-     * - **css** (`string`): The new host CSS to be injected.
-     * 
-     * ### Example:
-     * ```js
-     * 
-     * class MyComp extends Comp {
-     *     constructor() {
-     *         super();
-     *         this.host({width: "auto", boxSizing: "border-box"});
-     *     }
-     * }
-     * ```
-     */
-    public host(css: CSSConfig) {
-        this.design.hostOverride = this.design.create(css);
-        this.render();
-        return this;
-    }
-
+    
     /**
      * ## render
      * 
@@ -246,8 +211,8 @@ export abstract class Comp extends HTMLElement {
      */
     flatten(items: any[], out: Array<CSSConfig | string> = []): Array<CSSConfig | string> {
         for (const item of items) {
-        if (Array.isArray(item)) this.flatten(item, out);
-        else out.push(item);
+            if (Array.isArray(item)) this.flatten(item, out);
+            else out.push(item);
         }
 
         return out;
@@ -743,28 +708,89 @@ export abstract class Comp extends HTMLElement {
     /**
      * ## createCSS
      * 
-     * Generates the component’s CSS rules as a string.
+     * Generates the component’s CSS rules as a string, including
+     * standard selectors, media queries and keyframes.
      * 
      * ### Behaviour
-     * - Must be overridden by subclasses to return CSS declarations 
-     *   scoped to the component.
-     * - Use the `css()` helper or `this.design.create()` to build rules
-     *   from a `CSSConfig` object.
-     * - Should only include rules inside a `<style>` block (no wrapper).
+     * - Subclasses override this to return a `CSSConfig` object or array of them. 
+     * - Optional British or American English spellings for CSS properties.
+     * - Each config may define:
+     *   - `class` or omit for `:host` rules  
+     *   - CSS properties in camelCase, with optional operator suffixes  
+     *   - `media` for breakpoint-based overrides  
+     *   - `keyframes` for pure or hybrid animation blocks  
+     * - Internally uses `parseProperties` to handle suffix operators and units.
+     * 
+     * ### Operators
+     * Append these suffixes to property names to change units or functions:
+     * - `Percent` → `%`
+     * - `Var`     → `var(--<value>)`
+     * - `Url`     → `url(<value>)`
+     * - `Calc`    → `calc(<value>)`
+     * - `Em`      → `em`
+     * - `Rem`     → `rem`
+     * - `Vw`      → `vw`
+     * - `Vh`      → `vh`
+     * - `Vmin`    → `vmin`
+     * - `Vmax`    → `vmax`
+     * - `Ch`      → `ch`
+     * - `Ex`      → `ex`
+     * - `Pt`      → `pt`
+     * - `Pc`      → `pc`
+     * - `In`      → `in`
+     * - `Cm`      → `cm`
+     * - `Mm`      → `mm`
+     * - `Fr`      → `fr`
+     * - `S`       → `s`
+     * - `Ms`      → `ms`
+     * - `Deg`     → `deg`
+     * - `Rad`     → `rad`
+     * - `Grad`    → `grad`
+     * - `Turn`    → `turn`
+     * - `Dpi`     → `dpi`
+     * - `Dpcm`    → `dpcm`
+     * - `Dppx`    → `dppx`
+     * - `Q`       → `q`
+     * - `Hz`      → `Hz`
+     * - `KHz`     → `kHz`
      * 
      * ### Returns
-     * - `string`: CSS declarations to inject via `<style>`.
+     * - `string`: Full CSS rules to inject inside `<style>`.
      * 
-     * ### Example
-     * ```js
+     * ### Examples
+     * ```ts
      * createCSS() {
-     *   return this.css({
-     *     class:        "btn",
-     *     background:   "black100",
-     *     colour:       "white",
-     *     padding:      10,
-     *     borderRadius: 8
-     *   });
+     *   return [
+     *     { class: "btn",
+     *       backgroundVar: "primary",       // var(--primary)
+     *       colour: "white",
+     *       padding: [10, 20],               // "10px 20px"
+     *       borderRadiusPercent: 50,         // "50%"
+     *       fontSizePt: 16,                  // "16pt"
+     *       animation: ["flyIn", "2s", "ease"], 
+     *       media: {
+     *         maxWidthBp: 600,               // handled as @media (max-width:600px)
+     *         padding: 5,
+     *         colourVar: "accent80"
+     *       }
+     *     },
+     *     { keyframes: {
+     *         name: "flyIn",
+     *         from: {
+     *           transform: ["translateX(-100%)","rotate(-10deg)"],
+     *           opacity: 0
+     *         },
+     *         "50%": {
+     *           topPx: 50,
+     *           opacity: 0.5
+     *         },
+     *         to: {
+     *           transform: "translateX(0)",
+     *           opacity: 1
+     *         }
+     *       }
+     *     }
+     *   ];
      * }
      * ```
      */
