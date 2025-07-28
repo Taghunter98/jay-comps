@@ -16,76 +16,147 @@ import { Effects } from "./effects.js";
 /**
  * # Comp
  * 
- * Abstract base class for custom elements that encapsulates Shadow DOM setup,
- * template rendering, styling, data fetching, and lifecycle hooks.
+ * Abstract base class for custom elements that encapsulates:
+ * - Shadow DOM setup  
+ * - Template rendering (HTML + CSS injection)  
+ * - Data fetching (`request()`, `submitForm()`, `fetchOnce()`)  
+ * - Event pub/sub (`publish()`, `subscribe()`)  
+ * - CSS helper with media queries & keyframes (`css()`)  
+ * - Lifecycle hooks (`beforeRender()`, `createHTML()`, `createCSS()`, `afterRender()`)
  * 
  * ## Overview
- * This class handles the core lifecycle and utilities of a component:
- * - Calls `beforeRender()` hook before rendering for pre render logic
- * - Attaches an open shadow root  
- * - Injects HTML and CSS via `render()`  
- * - Provides JSON and multipart HTTP helpers (`request()`, `submitForm()`)  
- * - Offers a `css()` helper for building scoped styles  
- * - Calls `afterRender()` hook after rendering to wire up interactivity  
  * 
- * Subclasses must override three methods:
- * - `beforeRender(): void` — runs before DOM/CSS injection to add logic  
- * - `createHTML(): string` — returns the component’s inner markup  
- * - `createCSS(): string` — returns component-scoped CSS rules  
- * - `afterRender(): void` — runs after DOM/CSS injection to add event listeners or logic  
+ * 1. `beforeRender()` runs before any DOM or CSS is injected.  
+ * 2. An open shadow root is attached.  
+ * 3. `createHTML()` and `createCSS()` generate the markup and styles.  
+ * 4. HTML/CSS are injected via `render()`.  
+ * 5. `afterRender()` runs to wire up event listeners or start effects.  
+ * 
+ * ## CSS Helper (`css()`)
+ * 
+ * Build scoped styles from `CSSConfig` or an array of them.  
+ * Supports:
+ * - **Standard rules:** `class`, `pseudoClass`, fallback to `:host`  
+ * - **Media queries:** use `media` key with breakpoint props (e.g. `maxWidthBp`, nested configs)  
+ * - **Keyframes:** use `keyframes` key for pure or hybrid `@keyframes` blocks  
+ * - **Operators:** append suffixes to camelCase props for units/functions  
+ * 
+ * ### Operators
+ * - `Percent` -> `%`  
+ * - `Var`     -> `var(--<value>)`  
+ * - `Url`     -> `url(<value>)`  
+ * - `Calc`    -> `calc(<value>)`  
+ * - `Em`      -> `em`  
+ * - `Rem`     -> `rem`  
+ * - `Vw`      -> `vw`  
+ * - `Vh`      -> `vh`  
+ * - `Vmin`    -> `vmin`  
+ * - `Vmax`    -> `vmax`  
+ * - `Ch`      -> `ch`  
+ * - `Ex`      -> `ex`  
+ * - `Pt`      -> `pt`  
+ * - `Pc`      -> `pc`  
+ * - `In`      -> `in`  
+ * - `Cm`      -> `cm`  
+ * - `Mm`      -> `mm`  
+ * - `Fr`      -> `fr`  
+ * - `S`       -> `s`  
+ * - `Ms`      -> `ms`  
+ * - `Deg`     -> `deg`  
+ * - `Rad`     -> `rad`  
+ * - `Grad`    -> `grad`  
+ * - `Turn`    -> `turn`  
+ * - `Dpi`     -> `dpi`  
+ * - `Dpcm`    -> `dpcm`  
+ * - `Dppx`    -> `dppx`  
+ * - `Q`       -> `q`  
+ * - `Hz`      -> `Hz`  
+ * - `KHz`     -> `kHz`  
+ * 
+ * ## Event Pub/Sub
+ * 
+ * - **publish(name, detail?)**  
+ *   Dispatch a bubbling, composed `CustomEvent`.  
+ * 
+ * - **subscribe<T>(name, listener, options?, autoCleanup?)**  
+ *   Listen for an event, deduplicate by name, and auto-unsubscribe on disconnect.  
+ *   Returns an unsubscribe function.
+ * 
+ * ## Data Fetching
+ * 
+ * - **request<Api>(url, method, data?)**  
+ *   JSON GET/POST helper returning typed data.  
+ * 
+ * - **submitForm<Api>(url, form \| FormData \| Record)**  
+ *   Multipart form POST returning parsed JSON.  
+ * 
+ * - **fetchOnce<Key,Value>(key, fetcher)**  
+ *   Memoised fetch to avoid duplicate requests in a render cycle.
  * 
  * ## Properties
- * - **design** (`Design`) — style builder, including default host rules  
- * - **api** (`API`)        — HTTP helper for JSON and form submissions  
- * - **effect** (`Effects`) — animation and side-effect utility  
+ * 
+ * - **design** (`Design`)   — style builder & default host rules  
+ * - **api** (`API`)         — HTTP & submission helpers  
+ * - **effect** (`Effects`)  — animation & side-effect utilities  
  * 
  * ## Methods
- * - **render(): void**  
- *   Attaches HTML/CSS to the shadow root and then calls `hook()`.  
  * 
- * - **update(html?: string, css?: string): void**  
- *   Re-injects optional overrides or regenerates via `createHTML()`/`createCSS()`.  
- * 
- * - **css(config: CSSConfig): string**  
- *   Compiles a CSSConfig object into a CSS block.  
- * 
- * - **request<ApiResponse<T>>(url: string, method: "GET" | "POST", data?: object): Promise<T>**  
- *   Sends a JSON GET/POST and returns the parsed response.  
- * 
- * - **submitForm<ApiResponseT>(url: string, data: HTMLFormElement \| FormData \| Record<string, any>): Promise<T>**  
- *   Converts input into `FormData`, POSTS as multipart, and parses JSON.  
+ * - `render()`  
+ * - `update(html?, css?)`  
+ * - `css(config \| config[])`  
+ * - `beforeRender()`  
+ * - `createHTML()`  
+ * - `createCSS()`  
+ * - `afterRender()`  
+ * - `publish()` / `subscribe()`  
+ * - `request()` / `submitForm()` / `fetchOnce()`  
  * 
  * ## Example
- * ```js
+ * 
+ * ```ts
+ * 
  * class MyComp extends Comp {
- *   greeting_ = "Hello, world!";
+ *   private msg: string;
  * 
- *   createHTML(): string {
- *     return `<button class="btn">${this.greeting_}</button>`;
+ *   beforeRender() {
+ *      if (!this.msg) this.msg = "Hello Jay!";
  *   }
  * 
- *   createCSS(): string {
- *     return {
- *       class: "btn",
- *       background: "blue100",
- *       colour: "white",
- *       padding: [8, 16],
- *       borderRadius: 4,
- *       media: {
- *           size: 600,
- *           fontSize: 16
- *      );
+ *   createHTML() { return `<button>${this.msg}</button>`; }
+ * 
+ *   createCSS() {
+ *     return [
+ *       {
+ *         class: "btn",
+ *         backgroundVar: "primary",
+ *         colour: "white",
+ *         padding: [8,16],
+ *         borderRadiusPercent: 50,
+ *         media: {
+ *           maxWidthBp: 600,
+ *           padding: 5
+ *         }
+ *       },
+ *       {
+ *         keyframes: {
+ *           name: "pulse",
+ *           from: { opacity: 1 },
+ *           "50%": { opacity: 0.5 },
+ *           to: { opacity: 1 }
+ *         }
+ *       }
+ *     ];
  *   }
  * 
- *   afterRender(): void {
- *     const btn = this.shadowRoot!.querySelector("button")!;
- *     btn.addEventListener("click", () => alert(this.greeting));
+ *   afterRender() {
+ *     this.subscribe("pulse-done", () => console.log("done"));
  *   }
  * 
  *   static { Comp.register(this); }
  * }
  * ```
  */
+
 export abstract class Comp extends HTMLElement {
     
     private api = new API();
@@ -484,7 +555,7 @@ export abstract class Comp extends HTMLElement {
      * ## subscribe
      * 
      * Registers a listener for a named event on this element (or its descendants).
-     * Listener is garbage collected automatically when listener is deleted.
+     * Listener is garbage collected automatically when component is removed.
      * 
      * ### Behaviour
      * - Removes any existing listener for the same `name` before adding a new one.  
