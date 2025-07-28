@@ -12,7 +12,7 @@
 /**
  * Custom types for CSSValues and CSSConfig objects
  */
-export type CSSValue = string | number | boolean | null | Array<number|string> | undefined;
+export type CSSValue = string | number | boolean | null | Array<number|string> | any;
 export type CSSConfig = Record<string, CSSValue>;
 
 export class Design {
@@ -70,6 +70,10 @@ label {font-size: 12px; font-weight: 500; line-height: 16pt;}`;
      * Method compiles base CSS and then appends media queries if applicable.
      */
     public create(css: CSSConfig): string {
+        if (css.keyframes && !css.class && !css.pseudoClass) {
+            return this.compileKeyframes(css.keyframes as any);
+        }
+
         const selector = css.pseudoClass ? 
             `${css.class}:${css.pseudoClass}`: 
             css.class!;
@@ -79,6 +83,10 @@ ${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
 
         if (css.media && typeof css.media === "object" && !Array.isArray(css.media)) {
             cssText += this.compileMedia(css.media, css.class, css.pseudoClass);
+        }
+
+        if (css.keyframes && typeof css.keyframes === "object" && !Array.isArray(css.keyframes)) {
+            cssText += this.compileKeyframes(css.keyframes);
         }
 
         return cssText;
@@ -93,7 +101,12 @@ ${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
         let cssString = "";
 
         for (let key in css) {
-            if (key === "class" || key == "pseudoClass" || key == "media") continue;
+            if (
+                key == "class" 
+                || key == "pseudoClass" 
+                || key == "media" 
+                || key == "keyframes"
+            ) continue;
             let value: CSSValue = css[key];
             const {propKey, propValue} = this.parseProperties(key, value)
 
@@ -101,6 +114,45 @@ ${selector ? `.${selector}` : ':host'} {${this.compileCSS(css)}}\n`;
         }
 
         return cssString;
+    }
+
+    /**
+     * Method compiles a CSS Keyframes block from a CSS Config object.
+     * 
+     * Works by parsing and compiling each 'block' of keys and properties and calls the
+     * parseProperties API for type validation.
+     * 
+     * The final CSS Keyframes block is built and returned as a string literal.
+     */
+    private compileKeyframes(config: CSSConfig): string {
+        const {name, ...keyframes} = config;
+        if (!name) throw new Error("Keyframes config must include a name");
+
+        const blocks = Object.entries(keyframes)
+            .map(([key, prop]) => {
+                const props = Object.entries(prop)
+                    .map(([rawKey, rawVal]) => {
+                        const {
+                            propKey, propValue
+                        } = this.parseProperties(rawKey, rawVal);
+
+                    return `    ${propKey}: ${propValue};`;
+            }).join("\n");
+
+            return `  ${this.parseKeyframe(key)} {\n${props}\n  }`;
+        });
+
+        return `@keyframes ${name} {\n${blocks.join("\n")}\n}`;
+    }
+
+    // Helper to normalise keyframe values
+    private parseKeyframe(step: string): string {
+        const lower = step.toLowerCase();
+
+        if (lower === "from" || lower === "to") return lower;
+        if (/^\d+%$/.test(step)) return step;
+
+        throw new Error('Invalid keyframe step. Use "from", "to", or "NN%".');
     }
     
     /**
