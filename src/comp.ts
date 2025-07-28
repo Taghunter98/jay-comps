@@ -16,76 +16,148 @@ import { Effects } from "./effects.js";
 /**
  * # Comp
  * 
- * Abstract base class for custom elements that encapsulates Shadow DOM setup,
- * template rendering, styling, data fetching, and lifecycle hooks.
+ * Abstract base class for creating components that encapsulates:
+ * - Shadow DOM setup  
+ * - Template rendering (HTML + CSS injection)  
+ * - Data fetching (`request()`, `submitForm()`, `fetchOnce()`)  
+ * - Event pub/sub (`publish()`, `subscribe()`)  
+ * - CSS generation from native JavaScript objects with media queries & keyframes
+ * - Lifecycle hooks (`beforeRender()`, `createHTML()`, `createCSS()`, `afterRender()`)
+ * - Helpers for accessing internal elements (`getById()`, `query()`, `queryAll()`)
  * 
  * ## Overview
- * This class handles the core lifecycle and utilities of a component:
- * - Calls `beforeRender()` hook before rendering for pre render logic
- * - Attaches an open shadow root  
- * - Injects HTML and CSS via `render()`  
- * - Provides JSON and multipart HTTP helpers (`request()`, `submitForm()`)  
- * - Offers a `css()` helper for building scoped styles  
- * - Calls `afterRender()` hook after rendering to wire up interactivity  
  * 
- * Subclasses must override three methods:
- * - `beforeRender(): void` — runs before DOM/CSS injection to add logic  
- * - `createHTML(): string` — returns the component’s inner markup  
- * - `createCSS(): string` — returns component-scoped CSS rules  
- * - `afterRender(): void` — runs after DOM/CSS injection to add event listeners or logic  
+ * 1. `beforeRender()` runs before any DOM or CSS is injected.  
+ * 2. An open shadow root is attached.  
+ * 3. `createHTML()` and `createCSS()` generate the markup and styles.  
+ * 4. HTML/CSS are injected via `render()`.  
+ * 5. `afterRender()` runs to wire up event listeners or start effects.  
+ * 
+ * ## CSS Generation
+ * 
+ * Build scoped styles from `CSSConfig` or an array of them.  
+ * Supports:
+ * - **Standard rules:** `class`, `pseudoClass`, fallback to `:host`  
+ * - **Media queries:** use `media` key with breakpoint props (e.g. `maxWidthBp`, nested configs)  
+ * - **Keyframes:** use `keyframes` key for pure or hybrid `@keyframes` blocks  
+ * - **Operators:** append suffixes to camelCase props for units/functions  
+ * 
+ * ### Operators
+ * - `Percent` -> `%`  
+ * - `Var`     -> `var(--<value>)`  
+ * - `Url`     -> `url(<value>)`  
+ * - `Calc`    -> `calc(<value>)`  
+ * - `Em`      -> `em`  
+ * - `Rem`     -> `rem`  
+ * - `Vw`      -> `vw`  
+ * - `Vh`      -> `vh`  
+ * - `Vmin`    -> `vmin`  
+ * - `Vmax`    -> `vmax`  
+ * - `Ch`      -> `ch`  
+ * - `Ex`      -> `ex`  
+ * - `Pt`      -> `pt`  
+ * - `Pc`      -> `pc`  
+ * - `In`      -> `in`  
+ * - `Cm`      -> `cm`  
+ * - `Mm`      -> `mm`  
+ * - `Fr`      -> `fr`  
+ * - `S`       -> `s`  
+ * - `Ms`      -> `ms`  
+ * - `Deg`     -> `deg`  
+ * - `Rad`     -> `rad`  
+ * - `Grad`    -> `grad`  
+ * - `Turn`    -> `turn`  
+ * - `Dpi`     -> `dpi`  
+ * - `Dpcm`    -> `dpcm`  
+ * - `Dppx`    -> `dppx`  
+ * - `Q`       -> `q`  
+ * - `Hz`      -> `Hz`  
+ * - `KHz`     -> `kHz`  
+ * 
+ * ## Event Pub/Sub
+ * 
+ * - **publish(name, detail?)**  
+ *   Dispatch a bubbling, composed `CustomEvent`.  
+ * 
+ * - **subscribe<T>(name, listener, options?, autoCleanup?)**  
+ *   Listen for an event, deduplicate by name, and auto-unsubscribe on disconnect.  
+ *   Returns an unsubscribe function.
+ * 
+ * ## Data Fetching
+ * 
+ * - **request<Api>(url, method, data?)**  
+ *   JSON GET/POST helper returning typed data.  
+ * 
+ * - **submitForm<Api>(url, form \| FormData \| Record)**  
+ *   Multipart form POST returning parsed JSON.  
+ * 
+ * - **fetchOnce<Key,Value>(key, fetcher)**  
+ *   Memoised fetch to avoid duplicate requests in a render cycle.
  * 
  * ## Properties
- * - **design** (`Design`) — style builder, including default host rules  
- * - **api** (`API`)        — HTTP helper for JSON and form submissions  
- * - **effect** (`Effects`) — animation and side-effect utility  
+ * 
+ * - **design** (`Design`)   — style builder & default host rules  
+ * - **api** (`API`)         — HTTP & submission helpers  
+ * - **effect** (`Effects`)  — animation & side-effect utilities  
  * 
  * ## Methods
- * - **render(): void**  
- *   Attaches HTML/CSS to the shadow root and then calls `hook()`.  
  * 
- * - **update(html?: string, css?: string): void**  
- *   Re-injects optional overrides or regenerates via `createHTML()`/`createCSS()`.  
- * 
- * - **css(config: CSSConfig): string**  
- *   Compiles a CSSConfig object into a CSS block.  
- * 
- * - **request<ApiResponse<T>>(url: string, method: "GET" | "POST", data?: object): Promise<T>**  
- *   Sends a JSON GET/POST and returns the parsed response.  
- * 
- * - **submitForm<ApiResponseT>(url: string, data: HTMLFormElement \| FormData \| Record<string, any>): Promise<T>**  
- *   Converts input into `FormData`, POSTS as multipart, and parses JSON.  
+ * - `render()`  
+ * - `update(html?, css?)`  
+ * - `css(config \| config[])`  
+ * - `beforeRender()`  
+ * - `createHTML()`  
+ * - `createCSS()`  
+ * - `afterRender()`  
+ * - `publish()` / `subscribe()`  
+ * - `request()` / `submitForm()` / `fetchOnce()`  
  * 
  * ## Example
- * ```js
+ * 
+ * ```ts
+ * 
  * class MyComp extends Comp {
- *   greeting_ = "Hello, world!";
+ *   private msg: string;
  * 
- *   createHTML(): string {
- *     return `<button class="btn">${this.greeting_}</button>`;
+ *   beforeRender() {
+ *      if (!this.msg) this.msg = "Hello Jay!";
  *   }
  * 
- *   createCSS(): string {
- *     return {
- *       class: "btn",
- *       background: "blue100",
- *       colour: "white",
- *       padding: [8, 16],
- *       borderRadius: 4,
- *       media: {
- *           size: 600,
- *           fontSize: 16
- *      );
+ *   createHTML() { return `<button>${this.msg}</button>`; }
+ * 
+ *   createCSS() {
+ *     return [
+ *       {
+ *         class: "btn",
+ *         backgroundVar: "primary",
+ *         colour: "white",
+ *         padding: [8,16],
+ *         borderRadiusPercent: 50,
+ *         media: {
+ *           maxWidthBp: 600,
+ *           padding: 5
+ *         }
+ *       },
+ *       {
+ *         keyframes: {
+ *           name: "pulse",
+ *           from: { opacity: 1 },
+ *           "50%": { opacity: 0.5 },
+ *           to: { opacity: 1 }
+ *         }
+ *       }
+ *     ];
  *   }
  * 
- *   afterRender(): void {
- *     const btn = this.shadowRoot!.querySelector("button")!;
- *     btn.addEventListener("click", () => alert(this.greeting));
+ *   afterRender() {
+ *     this.subscribe("pulse-done", () => console.log("done"));
  *   }
  * 
  *   static { Comp.register(this); }
  * }
  * ```
  */
+
 export abstract class Comp extends HTMLElement {
     
     private api = new API();
@@ -94,6 +166,8 @@ export abstract class Comp extends HTMLElement {
 
     private static _registry = new Set<string>();
     protected asyncStore: Record<string, FetchEntry<any>> = {};
+    private unsubscribers_: Array<() => void> = [];
+    private listeners = new Map<String, EventListener>();
 
 
     /**
@@ -147,42 +221,6 @@ export abstract class Comp extends HTMLElement {
         super();
         this.attachShadow({ mode: "open" });
         this.render();
-    }
-
-   
-    /**
-     * ## host
-     * 
-     * Overrides the default `:host` configuration.
-     * 
-     * ### Behaviour:
-     * Nested components by default scale to fill the width of their parent due to 
-     * the restrictions of Shadow DOM components.
-     * 
-     * **Default config**
-     * ```css
-     * 
-     * :host {display: block; width: 100%; box-sizing: border-box;}
-     * ```
-     * 
-     * ### Parameters:
-     * - **css** (`string`): The new host CSS to be injected.
-     * 
-     * ### Example:
-     * ```js
-     * 
-     * class MyComp extends Comp {
-     *     constructor() {
-     *         super();
-     *         this.host({width: "auto", boxSizing: "border-box"});
-     *     }
-     * }
-     * ```
-     */
-    public host(css: CSSConfig) {
-        this.design.hostOverride = this.design.create(css);
-        this.render();
-        return this;
     }
 
     /**
@@ -245,8 +283,8 @@ export abstract class Comp extends HTMLElement {
      */
     flatten(items: any[], out: Array<CSSConfig | string> = []): Array<CSSConfig | string> {
         for (const item of items) {
-        if (Array.isArray(item)) this.flatten(item, out);
-        else out.push(item);
+            if (Array.isArray(item)) this.flatten(item, out);
+            else out.push(item);
         }
 
         return out;
@@ -480,6 +518,127 @@ export abstract class Comp extends HTMLElement {
     }
 
     /**
+     * ## publish
+     * 
+     * Dispatches a custom event from this element with an optional payload.
+     * 
+     * ### Behaviour
+     * - Creates and dispatches a `CustomEvent` using `this.dispatchEvent`.  
+     * - Event bubbles (`bubbles: true`) and crosses shadow DOM boundaries (`composed: true`).
+     * 
+     * ### Parameters
+     * - `name` (`string`):  
+     *   The event type/name to publish (e.g. `"data-loaded"`).
+     * - `detail` (`unknown`, optional):  
+     *   Any data to attach to the event’s `detail` property.
+     * 
+     * ### Returns
+     * `void`
+     * 
+     * ### Examples
+     * ```ts
+     * // Notify that user data has loaded
+     * this.publish("user-loaded", { id: 42, name: "Alice" });
+     * 
+     * // Fire a simple ping with no payload
+     * this.publish("ping");
+     * ```
+     */
+    protected publish(name: string, detail?: unknown) {
+        this.dispatchEvent(new CustomEvent(name, {
+            detail: detail,
+            bubbles: true,
+            composed: true
+        }))
+    }
+
+    /**
+     * ## subscribe
+     * 
+     * Registers a listener for a named event on this element (or its descendants).
+     * Listener is unsubscribed automatically when the component is removed.
+     * 
+     * ### Behaviour
+     * - Removes any existing listener for the same `name` before adding a new one.  
+     * - Wraps the user callback so it receives a strongly-typed `CustomEvent<T>`.  
+     * - Stores an unsubscribe function for manual removal or automatic teardown.
+     * 
+     * ### Type Parameters
+     * - `T` – The shape of the event’s `detail` payload.
+     * 
+     * ### Parameters
+     * - `name` (`string`):  
+     *   The event type to listen for (e.g. `"data-loaded"`).  
+     * - `listener` (`(evt: CustomEvent<T>) => void`):  
+     *   Callback invoked with the event when it fires.  
+     * - `options` (`boolean | AddEventListenerOptions`, optional):  
+     *   Standard `addEventListener` options (`capture`, `once`, etc.).  
+     * - `autoCleanup` (`boolean`, default `true`):  
+     *   If true, the listener is automatically removed in `disconnectedCallback`.
+     * 
+     * ### Returns
+     * `() => void` – A function that, when called, removes this listener immediately.
+     * 
+     * ### Examples
+     * ```ts
+     * // Listen for a custom event and log its detail
+     * const unsub = this.subscribe<{ items: number[] }>(
+     *   "data-loaded",
+     *   evt => console.log(evt.detail.items)
+     * );
+     * 
+     * // Manually unsubscribe before removal or leave to be unsubscribed on removal
+     * unsub();
+     * ```
+     */
+    protected subscribe<T>(
+        name: string,
+        listener: (evt: CustomEvent<T>) => void,
+        options?: boolean | AddEventListenerOptions,
+        autoCleanup: boolean = true
+    ): () => void {
+        if (this.listeners.has(name)) {
+            const old = this.listeners.get(name)!;
+            this.removeEventListener(name, old, options);
+        }
+
+        const bound = (e: Event) => listener(e as CustomEvent<T>);
+        this.listeners.set(name, bound);
+        this.addEventListener(name, bound, options);
+
+        const unsubscribe = () => {
+            this.removeEventListener(name, bound, options);
+            this.listeners.delete(name);
+        }
+
+        if (autoCleanup) this.unsubscribers_.push(unsubscribe);
+
+        return unsubscribe;
+    }
+
+    /**
+     * ## disconnectedCallback
+     * 
+     * Lifecycle hook invoked when the element is removed from the document.
+     * 
+     * ### Behaviour
+     * - Calls all stored unsubscribe functions to remove active listeners.  
+     * - Clears internal maps and lists to prevent memory leaks.
+     * 
+     * ### Returns
+     * `void`
+     * 
+     * ### Examples
+     * ```ts
+     * // No manual action needed; all listeners auto-clean up on disconnect.
+     * ```
+     */
+    disconnectedCallback() {
+        this.unsubscribers_.forEach(unsub => unsub());
+        this.unsubscribers_.length = 0;
+    }
+
+    /**
      * ## getById
      * 
      * Retrieves an element from the shadow DOM by its ID.
@@ -621,28 +780,90 @@ export abstract class Comp extends HTMLElement {
     /**
      * ## createCSS
      * 
-     * Generates the component’s CSS rules as a string.
+     * Generates the component’s CSS rules as a string, including
+     * standard selectors, media queries and keyframes.
      * 
      * ### Behaviour
-     * - Must be overridden by subclasses to return CSS declarations 
-     *   scoped to the component.
-     * - Use the `css()` helper or `this.design.create()` to build rules
-     *   from a `CSSConfig` object.
-     * - Should only include rules inside a `<style>` block (no wrapper).
+     * - Subclasses override this to return a `CSSConfig` object or array of them. 
+     * - Optional British or American English spellings for CSS properties.
+     * - Each config may define:
+     *   - `class` or omit for `:host` rules  
+     *   - CSS properties in camelCase, with optional operator suffixes  
+     *   - `media` for breakpoint-based overrides  
+     *   - `keyframes` for pure or hybrid animation blocks  
+     * - Internally uses `parseProperties` to handle suffix operators and units.
+     * 
+     * ### Operators
+     * Append these suffixes to property names to change units or functions:
+     * - `Percent` -> `%`
+     * - `Var`     -> `var(--<value>)`
+     * - `Url`     -> `url(<value>)`
+     * - `Calc`    -> `calc(<value>)`
+     * - `Em`      -> `em`
+     * - `Rem`     -> `rem`
+     * - `Vw`      -> `vw`
+     * - `Vh`      -> `vh`
+     * - `Vmin`    -> `vmin`
+     * - `Vmax`    -> `vmax`
+     * - `Ch`      -> `ch`
+     * - `Ex`      -> `ex`
+     * - `Pt`      -> `pt`
+     * - `Pc`      -> `pc`
+     * - `In`      -> `in`
+     * - `Cm`      -> `cm`
+     * - `Mm`      -> `mm`
+     * - `Fr`      -> `fr`
+     * - `S`       -> `s`
+     * - `Ms`      -> `ms`
+     * - `Deg`     -> `deg`
+     * - `Rad`     -> `rad`
+     * - `Grad`    -> `grad`
+     * - `Turn`    -> `turn`
+     * - `Dpi`     -> `dpi`
+     * - `Dpcm`    -> `dpcm`
+     * - `Dppx`    -> `dppx`
+     * - `Q`       -> `q`
+     * - `Hz`      -> `Hz`
+     * - `KHz`     -> `kHz`
+     * - `Bp`      -> Sets the breakpoint (media) e.g `maxWidthBp: 600`
      * 
      * ### Returns
-     * - `string`: CSS declarations to inject via `<style>`.
+     * - `string`: Full CSS rules to inject inside `<style>`.
      * 
-     * ### Example
-     * ```js
+     * ### Examples
+     * ```ts
      * createCSS() {
-     *   return this.css({
-     *     class:        "btn",
-     *     background:   "black100",
-     *     colour:       "white",
-     *     padding:      10,
-     *     borderRadius: 8
-     *   });
+     *   return [
+     *     { class: "btn",
+     *       backgroundVar: "primary",       // var(--primary)
+     *       colour: "white",
+     *       padding: [10, 20],               // "10px 20px"
+     *       borderRadiusPercent: 50,         // "50%"
+     *       fontSizePt: 16,                  // "16pt"
+     *       animation: ["flyIn", "2s", "ease"], 
+     *       media: {
+     *         maxWidthBp: 600,               // handled as @media (max-width:600px)
+     *         padding: 5,
+     *         colourVar: "accent80"
+     *       }
+     *     },
+     *     { keyframes: {
+     *         name: "flyIn",
+     *         from: {
+     *           transform: ["translateX(-100%)","rotate(-10deg)"],
+     *           opacity: 0
+     *         },
+     *         "50%": {
+     *           topPx: 50,
+     *           opacity: 0.5
+     *         },
+     *         to: {
+     *           transform: "translateX(0)",
+     *           opacity: 1
+     *         }
+     *       }
+     *     }
+     *   ];
      * }
      * ```
      */
