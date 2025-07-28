@@ -16,13 +16,14 @@ import { Effects } from "./effects.js";
 /**
  * # Comp
  * 
- * Abstract base class for custom elements that encapsulates:
+ * Abstract base class for creating components that encapsulates:
  * - Shadow DOM setup  
  * - Template rendering (HTML + CSS injection)  
  * - Data fetching (`request()`, `submitForm()`, `fetchOnce()`)  
  * - Event pub/sub (`publish()`, `subscribe()`)  
- * - CSS helper with media queries & keyframes (`css()`)  
+ * - CSS generation from native JavaScript objects with media queries & keyframes
  * - Lifecycle hooks (`beforeRender()`, `createHTML()`, `createCSS()`, `afterRender()`)
+ * - Helpers for accessing internal elements (`getById()`, `query()`, `queryAll()`)
  * 
  * ## Overview
  * 
@@ -32,7 +33,7 @@ import { Effects } from "./effects.js";
  * 4. HTML/CSS are injected via `render()`.  
  * 5. `afterRender()` runs to wire up event listeners or start effects.  
  * 
- * ## CSS Helper (`css()`)
+ * ## CSS Generation
  * 
  * Build scoped styles from `CSSConfig` or an array of them.  
  * Supports:
@@ -555,7 +556,7 @@ export abstract class Comp extends HTMLElement {
      * ## subscribe
      * 
      * Registers a listener for a named event on this element (or its descendants).
-     * Listener is garbage collected automatically when component is removed.
+     * Listener is unsubscribed automatically when the component is removed.
      * 
      * ### Behaviour
      * - Removes any existing listener for the same `name` before adding a new one.  
@@ -586,7 +587,7 @@ export abstract class Comp extends HTMLElement {
      *   evt => console.log(evt.detail.items)
      * );
      * 
-     * // Manually unsubscribe before removal or leave to be garbage collected
+     * // Manually unsubscribe before removal or leave to be unsubscribed on removal
      * unsub();
      * ```
      */
