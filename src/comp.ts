@@ -150,7 +150,7 @@ export abstract class Comp extends HTMLElement {
         this.attachShadow({ mode: "open" });
         this.render();
     }
-    
+
     /**
      * ## render
      * 
@@ -723,36 +723,37 @@ export abstract class Comp extends HTMLElement {
      * 
      * ### Operators
      * Append these suffixes to property names to change units or functions:
-     * - `Percent` → `%`
-     * - `Var`     → `var(--<value>)`
-     * - `Url`     → `url(<value>)`
-     * - `Calc`    → `calc(<value>)`
-     * - `Em`      → `em`
-     * - `Rem`     → `rem`
-     * - `Vw`      → `vw`
-     * - `Vh`      → `vh`
-     * - `Vmin`    → `vmin`
-     * - `Vmax`    → `vmax`
-     * - `Ch`      → `ch`
-     * - `Ex`      → `ex`
-     * - `Pt`      → `pt`
-     * - `Pc`      → `pc`
-     * - `In`      → `in`
-     * - `Cm`      → `cm`
-     * - `Mm`      → `mm`
-     * - `Fr`      → `fr`
-     * - `S`       → `s`
-     * - `Ms`      → `ms`
-     * - `Deg`     → `deg`
-     * - `Rad`     → `rad`
-     * - `Grad`    → `grad`
-     * - `Turn`    → `turn`
-     * - `Dpi`     → `dpi`
-     * - `Dpcm`    → `dpcm`
-     * - `Dppx`    → `dppx`
-     * - `Q`       → `q`
-     * - `Hz`      → `Hz`
-     * - `KHz`     → `kHz`
+     * - `Percent` -> `%`
+     * - `Var`     -> `var(--<value>)`
+     * - `Url`     -> `url(<value>)`
+     * - `Calc`    -> `calc(<value>)`
+     * - `Em`      -> `em`
+     * - `Rem`     -> `rem`
+     * - `Vw`      -> `vw`
+     * - `Vh`      -> `vh`
+     * - `Vmin`    -> `vmin`
+     * - `Vmax`    -> `vmax`
+     * - `Ch`      -> `ch`
+     * - `Ex`      -> `ex`
+     * - `Pt`      -> `pt`
+     * - `Pc`      -> `pc`
+     * - `In`      -> `in`
+     * - `Cm`      -> `cm`
+     * - `Mm`      -> `mm`
+     * - `Fr`      -> `fr`
+     * - `S`       -> `s`
+     * - `Ms`      -> `ms`
+     * - `Deg`     -> `deg`
+     * - `Rad`     -> `rad`
+     * - `Grad`    -> `grad`
+     * - `Turn`    -> `turn`
+     * - `Dpi`     -> `dpi`
+     * - `Dpcm`    -> `dpcm`
+     * - `Dppx`    -> `dppx`
+     * - `Q`       -> `q`
+     * - `Hz`      -> `Hz`
+     * - `KHz`     -> `kHz`
+     * - `Bp`      -> Sets the breakpoint (media) e.g `maxWidthBp: 600`
      * 
      * ### Returns
      * - `string`: Full CSS rules to inject inside `<style>`.
