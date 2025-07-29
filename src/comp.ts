@@ -13,6 +13,13 @@ import { API, ApiResponse, FetchEntry } from './api.js';
 import { CSSConfig, Design } from "./design.js";
 import { Effects } from "./effects.js";
 
+interface PropOptions<T> {
+    default?: T | (() => T);            // Static value or factory for inital prop state
+    validator?(value: any): value is T; // Filter bad assignments
+}
+
+type Props = Record<string, PropOptions<any>>;
+
 /**
  * # Comp
  * 
@@ -157,17 +164,19 @@ import { Effects } from "./effects.js";
  * }
  * ```
  */
-
 export abstract class Comp extends HTMLElement {
 
     private api = new API();
     public effect = new Effects();
     private design = new Design();
 
-    private static _registry = new Set<string>();
+    private static registry_ = new Set<string>();
     protected asyncStore: Record<string, FetchEntry<any>> = {};
     private unsubscribers_: Array<() => void> = [];
     private listeners = new Map<String, EventListener>();
+    private propValues_: Record<string, any> = [];
+
+    private static wiredProps_ = new WeakSet<typeof Comp>;
 
     /**
      * Method internally builds an HTML Element based off the classname prefixed with 'comp-'.
@@ -180,9 +189,9 @@ export abstract class Comp extends HTMLElement {
             .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
             .toLowerCase();
 
-        if (!Comp._registry.has(tag)) {
+        if (!Comp.registry_.has(tag)) {
             customElements.define(tag, ctor as unknown as CustomElementConstructor);
-            Comp._registry.add(tag);
+            Comp.registry_.add(tag);
         }
     }
 
@@ -219,12 +228,53 @@ export abstract class Comp extends HTMLElement {
      * ```
      */
     public static define() {
+        this.checkPropsWired();
         this.register(this);
+    }
+
+    private static checkPropsWired() {
+        if (Comp.wiredProps_.has(this)) return;
+
+        const propDefs = (this as any).props as Props | undefined;
+
+        if (propDefs) {
+            for (const key of Object.keys(propDefs)) {
+                Object.defineProperty(this.prototype, key, {
+                    get(this: Comp) {
+                        return this.propValues_[key];
+                    },
+                    set(this: Comp, newVal: any) {
+                        const def = propDefs[key];
+                        if (def.validator && !def.validator(newVal)) return;
+                        this.propValues_[key] = newVal;
+                        this.update();
+                    },
+                    enumerable: true,
+                    configurable: true,
+                });
+            }
+        }
+        Comp.wiredProps_.add(this);
+    }
+
+    private createProps(ctor: typeof Comp) {
+        const propDefs = (ctor as any).props as Props | undefined;
+        if (propDefs) {
+            for (const key of Object.keys(propDefs)) {
+                const def = propDefs[key];
+                this.propValues_[key] = typeof def.default === "function"
+                    ? (def.default as () => any)()
+                    : def.default;
+            }
+        }
     }
 
     constructor() {
         super();
         this.attachShadow({ mode: "open" });
+        const ctor = this.constructor as typeof Comp;
+        this.createProps(ctor);
+
         this.render();
     }
 
