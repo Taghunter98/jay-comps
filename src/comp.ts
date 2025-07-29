@@ -159,7 +159,7 @@ import { Effects } from "./effects.js";
  */
 
 export abstract class Comp extends HTMLElement {
-    
+
     private api = new API();
     public effect = new Effects();
     private design = new Design();
@@ -169,41 +169,10 @@ export abstract class Comp extends HTMLElement {
     private unsubscribers_: Array<() => void> = [];
     private listeners = new Map<String, EventListener>();
 
-
     /**
-     * ## register
-     * 
-     * Registers a `Comp` subclass as a custom element under the “comp-…” namespace.
-     * 
-     * ### Behavior 
-     * - Converts class name to kebab-case  
-     * - Prefixes the result with `"comp-"`  
-     * - Calls `customElements.define()` once, avoiding duplicate registrations  
-     * 
-     * ### Parameters
-     * - `ctor: typeof Comp`  
-     *   The subclass constructor that you want to register.  
-     * 
-     * ### Errors
-     * Throws an `Error` if stripping “Comp” yields an empty string (i.e. the class is  
-     * named just `"Comp"` or doesn’t end in `"Comp"`).  
-     * 
-     * ### Example
-     * ```ts
-     * export class UserLoginPageComp extends Comp {
-     *   // … your createHTML/createCSS/hook …
-     * 
-     *   // auto-register at load time
-     *   static {
-     *     Comp.register(this);
-     *   }
-     * }
-     * 
-     * // After import, <comp-user-login-page> is available in the DOM
-     * ```
+     * Method internally builds an HTML Element based off the classname prefixed with 'comp-'.
      */
-    protected static register(ctor: typeof Comp) {
-    
+    private static register(ctor: typeof Comp) {
         const raw = ctor.name;
         if (!raw) throw new Error(`Can't auto-derive tag for ${ctor.name}`);
 
@@ -215,6 +184,42 @@ export abstract class Comp extends HTMLElement {
             customElements.define(tag, ctor as unknown as CustomElementConstructor);
             Comp._registry.add(tag);
         }
+    }
+
+    /**
+     * ## define
+     *
+     * Registers a `Comp` subclass as a custom element under the “comp-…” namespace.
+     *
+     * ### Behaviour
+     * Converts the component's class name into a valid tag name and performs a one-time
+     * registration with the browser’s Custom Elements registry.
+     *
+     * ### Errors
+     * Throws an `Error` if:
+     * - The class name is empty or  
+     * - The derived tag name would be an empty string  
+     *   (e.g. your class is literally named `Comp` or doesn’t end with any characters).
+     *
+     * ### Example
+     * ```ts
+     * import { Comp } from "../dist/comp.js";
+     *
+     * export class UserLoginPage extends Comp {
+     *   // … your createHTML/createCSS/hook …
+     * }
+     *
+     * // Register at load time
+     * UserLoginPage.define();
+     * ```
+     * ```html
+     * 
+     * <!-- Now you can use <comp-user-login-page> in your HTML -->
+     * <comp-user-login-page></comp-user-login-page>
+     * ```
+     */
+    public static define() {
+        this.register(this);
     }
 
     constructor() {
@@ -274,7 +279,7 @@ export abstract class Comp extends HTMLElement {
 
         return rawArray.map(entry => {
             if (typeof entry === "string") return entry;
-            else return this.design.create(entry);    
+            else return this.design.create(entry);
         }).join("\n");
     }
 
@@ -328,12 +333,12 @@ export abstract class Comp extends HTMLElement {
         if (!this.shadowRoot) throw new Error("No shadow root");
 
         if (typeof this.beforeRender === "function") this.beforeRender();
-        
+
         const html = newHTML || this.createHTML();
-        const css  = newCSS || this.createCSS();
-       
+        const css = newCSS || this.createCSS();
+
         this.shadowRoot.innerHTML = this.createTemplate(html, this.compileCSSObjects(css));
-        
+
         if (typeof this.afterRender === "function") this.afterRender();
     }
 
@@ -382,10 +387,10 @@ export abstract class Comp extends HTMLElement {
      * }
      * ```
      */
-    public async request<T> (url: string, method: "GET" | "POST", data?: object): Promise<ApiResponse<T>> {
+    public async request<T>(url: string, method: "GET" | "POST", data?: object): Promise<ApiResponse<T>> {
         return this.api.request<T>(url, method, data);
     }
-    
+
     /**
      * ## submitForm
      * 
@@ -446,12 +451,12 @@ export abstract class Comp extends HTMLElement {
      */
     public async submitForm<T>(url: string, data: HTMLFormElement | FormData | Record<string, any>): Promise<ApiResponse<T>> {
         let formData: FormData;
-        
+
         if (data instanceof HTMLFormElement) formData = new FormData(data);
         else if (data instanceof FormData) formData = data;
         else {
             formData = new FormData();
-            for (const [k, v] of Object.entries(data)) { formData.append(k, String(v));}
+            for (const [k, v] of Object.entries(data)) { formData.append(k, String(v)); }
         }
 
         return this.api.submitForm<T>(url, formData);
@@ -464,7 +469,7 @@ export abstract class Comp extends HTMLElement {
      * that tracks loading, success and error states. Subsequent calls with the
      * same key return the cached result instead of re‐invoking the loader.
      * 
-     * ### Behavior
+     * ### Behaviour
      * - On first invocation the fetched data is stored within the component's `asyncStore`.
      * - On subsequent calls, the data is retrieved from `asyncStore`
      * 
@@ -499,7 +504,7 @@ export abstract class Comp extends HTMLElement {
     public fetchOnce<T>(key: string, loader: () => Promise<T>): FetchEntry<T> {
         let entry = this.asyncStore[key] as FetchEntry<T>;
         if (entry) return entry;
-        
+
         entry = { value: undefined, loading: true, error: undefined };
         this.asyncStore[key] = entry;
 
@@ -507,7 +512,7 @@ export abstract class Comp extends HTMLElement {
             entry.value = result;
             entry.error = undefined;
             entry.loading = false;
-            this.update();      
+            this.update();
         }).catch(err => {
             entry.error = err?.message || err;
             entry.loading = false;
