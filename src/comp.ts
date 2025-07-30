@@ -13,12 +13,14 @@ import { API, ApiResponse, FetchEntry } from './api.js';
 import { CSSConfig, Design } from "./design.js";
 import { Effects } from "./effects.js";
 
-interface PropOptions<T> {
-    default?: T | (() => T);            // Static value or factory for inital prop state
-    validator?(value: any): value is T; // Filter bad assignments
+type PropState<T> = {
+    default: T
+    loading?: T
+    error?: T
+    current: T
 }
 
-type Props = Record<string, PropOptions<any>>;
+type Props = Record<string, PropState<any>>;
 
 /**
  * # Comp
@@ -174,9 +176,9 @@ export abstract class Comp extends HTMLElement {
     protected asyncStore: Record<string, FetchEntry<any>> = {};
     private unsubscribers_: Array<() => void> = [];
     private listeners = new Map<String, EventListener>();
-    private propValues_: Record<string, any> = [];
 
-    private static wiredProps_ = new WeakSet<typeof Comp>;
+    protected properties!: Props;
+    private static activeProps = new WeakSet<typeof Comp>;
 
     /**
      * Method internally builds an HTML Element based off the classname prefixed with 'comp-'.
@@ -233,7 +235,7 @@ export abstract class Comp extends HTMLElement {
     }
 
     private static checkPropsWired() {
-        if (Comp.wiredProps_.has(this)) return;
+        if (Comp.activeProps.has(this)) return;
 
         const propDefs = (this as any).props as Props | undefined;
 
@@ -241,12 +243,40 @@ export abstract class Comp extends HTMLElement {
             for (const key of Object.keys(propDefs)) {
                 Object.defineProperty(this.prototype, key, {
                     get(this: Comp) {
-                        return this.propValues_[key];
+                        return this.properties[key].current;
                     },
-                    set(this: Comp, newVal: any) {
-                        const def = propDefs[key];
-                        if (def.validator && !def.validator(newVal)) return;
-                        this.propValues_[key] = newVal;
+                    set(this: Comp, v: any) {
+                        const st = this.properties[key];
+                        if (v == st.current) return;
+                        st.current = v;
+                        this.update();
+                    },
+                    enumerable: true,
+                    configurable: true,
+                });
+
+                Object.defineProperty(this.prototype, `${key}_loading`, {
+                    get(this: Comp) {
+                        return this.properties[key].loading;
+                    },
+                    set(this: Comp, v: any) {
+                        const st = this.properties[key];
+                        if (v == st.current) return;
+                        st.loading = v;
+                        this.update();
+                    },
+                    enumerable: true,
+                    configurable: true,
+                });
+
+                Object.defineProperty(this.prototype, `${key}_error`, {
+                    get(this: Comp) {
+                        return this.properties[key].error;
+                    },
+                    set(this: Comp, v: any) {
+                        const st = this.properties[key];
+                        if (v == st.current) return;
+                        st.error = v;
                         this.update();
                     },
                     enumerable: true,
@@ -254,17 +284,20 @@ export abstract class Comp extends HTMLElement {
                 });
             }
         }
-        Comp.wiredProps_.add(this);
+        Comp.activeProps.add(this);
     }
 
     private createProps(ctor: typeof Comp) {
-        const propDefs = (ctor as any).props as Props | undefined;
-        if (propDefs) {
-            for (const key of Object.keys(propDefs)) {
-                const def = propDefs[key];
-                this.propValues_[key] = typeof def.default === "function"
-                    ? (def.default as () => any)()
-                    : def.default;
+        const propDefs = (ctor as any).props as Props;
+        this.properties = {}
+
+        for (const [k, opts] of Object.entries(propDefs)) {
+            const getVal = (v: any) => typeof v === "function" ? v() : v
+            this.properties[k] = {
+                default: getVal(opts.default),
+                loading: opts.loading !== undefined ? getVal(opts.loading) : undefined,
+                error: opts.error !== undefined ? getVal(opts.error) : undefined,
+                current: getVal(opts.default)
             }
         }
     }
@@ -274,7 +307,6 @@ export abstract class Comp extends HTMLElement {
         this.attachShadow({ mode: "open" });
         const ctor = this.constructor as typeof Comp;
         this.createProps(ctor);
-
         this.render();
     }
 
