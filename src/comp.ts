@@ -167,7 +167,6 @@ type Props = Record<string, PropState<any>>;
  * ```
  */
 export abstract class Comp extends HTMLElement {
-
     private api = new API();
     public effect = new Effects();
     private design = new Design();
@@ -238,6 +237,7 @@ export abstract class Comp extends HTMLElement {
         if (Comp.activeProps.has(this)) return;
 
         const propDefs = (this as any).props as Props | undefined;
+        if (!propDefs) return;
 
         if (propDefs) {
             for (const key of Object.keys(propDefs)) {
@@ -289,14 +289,15 @@ export abstract class Comp extends HTMLElement {
 
     private createProps(ctor: typeof Comp) {
         const propDefs = (ctor as any).props as Props;
+        if (!propDefs) return;
         this.properties = {}
 
         for (const [k, opts] of Object.entries(propDefs)) {
             const getVal = (v: any) => typeof v === "function" ? v() : v
             this.properties[k] = {
                 default: getVal(opts.default),
-                loading: opts.loading !== undefined ? getVal(opts.loading) : undefined,
-                error: opts.error !== undefined ? getVal(opts.error) : undefined,
+                loading: getVal(opts.loading),
+                error: getVal(opts.error),
                 current: getVal(opts.default)
             }
         }
