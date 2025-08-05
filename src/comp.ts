@@ -13,14 +13,14 @@ import { API, ApiResponse, FetchEntry } from './api.js';
 import { CSSConfig, Design } from "./design.js";
 import { Effects } from "./effects.js";
 
-type PropState<T> = {
-    default: T
-    loading?: T
-    error?: T
-    current: T
-}
+type PropState<T = any> = {
+    default: T;
+    loading?: T;
+    error?: T;
+    current: T;
+};
 
-type Props = Record<string, PropState<any>>;
+type Props = Record<string, PropState>;
 
 /**
  * # Comp
@@ -176,8 +176,22 @@ export abstract class Comp extends HTMLElement {
     private unsubscribers_: Array<() => void> = [];
     private listeners = new Map<String, EventListener>();
 
-    protected properties!: Props;
-    private static activeProps = new WeakSet<typeof Comp>;
+    private static wiredClasses = new WeakSet<Function>();
+    protected properties: Record<string, PropState> = {};
+
+    constructor() {
+        super();
+        this.attachShadow({ mode: "open" });
+    }
+
+    connectedCallback() {
+        if ((this as any)._mounted) return;
+        (this as any)._mounted = true;
+
+        this.createProps();
+        this.propAccessors();
+        this.render();
+    }
 
     /**
      * Method internally builds an HTML Element based off the classname prefixed with 'comp-'.
@@ -229,86 +243,102 @@ export abstract class Comp extends HTMLElement {
      * ```
      */
     public static define() {
-        this.checkPropsWired();
         this.register(this);
     }
 
-    private static checkPropsWired() {
-        if (Comp.activeProps.has(this)) return;
-
-        const propDefs = (this as any).props as Props | undefined;
-        if (!propDefs) return;
-
-        if (propDefs) {
-            for (const key of Object.keys(propDefs)) {
-                Object.defineProperty(this.prototype, key, {
-                    get(this: Comp) {
-                        return this.properties[key].current;
-                    },
-                    set(this: Comp, v: any) {
-                        const st = this.properties[key];
-                        if (v == st.current) return;
-                        st.current = v;
-                        this.update();
-                    },
-                    enumerable: true,
-                    configurable: true,
-                });
-
-                Object.defineProperty(this.prototype, `${key}_loading`, {
-                    get(this: Comp) {
-                        return this.properties[key].loading;
-                    },
-                    set(this: Comp, v: any) {
-                        const st = this.properties[key];
-                        if (v == st.current) return;
-                        st.loading = v;
-                        this.update();
-                    },
-                    enumerable: true,
-                    configurable: true,
-                });
-
-                Object.defineProperty(this.prototype, `${key}_error`, {
-                    get(this: Comp) {
-                        return this.properties[key].error;
-                    },
-                    set(this: Comp, v: any) {
-                        const st = this.properties[key];
-                        if (v == st.current) return;
-                        st.error = v;
-                        this.update();
-                    },
-                    enumerable: true,
-                    configurable: true,
-                });
-            }
-        }
-        Comp.activeProps.add(this);
-    }
-
-    private createProps(ctor: typeof Comp) {
-        const propDefs = (ctor as any).props as Props;
-        if (!propDefs) return;
-        this.properties = {}
-
-        for (const [k, opts] of Object.entries(propDefs)) {
-            const getVal = (v: any) => typeof v === "function" ? v() : v
-            this.properties[k] = {
-                default: getVal(opts.default),
-                loading: getVal(opts.loading),
-                error: getVal(opts.error),
-                current: getVal(opts.default)
+    /**
+     * Scans the instance for properties that match the { default } pattern.
+     * Initialises the internal `properties` map and removes those props from the instance.
+     */
+    private createProps() {
+        for (const key of Object.keys(this)) {
+            const val = (this as any)[key];
+            if (val && typeof val === "object" && "default" in val) {
+                const resolve = (v: any) => (typeof v === "function" ? v() : v);
+                this.properties[key] = {
+                    default: resolve(val.default),
+                    loading: resolve(val.loading),
+                    error: resolve(val.error),
+                    current: resolve(val.default),
+                };
+                delete (this as any)[key]; // remove the raw prop from the instance
             }
         }
     }
 
-    constructor() {
-        super();
-        this.attachShadow({ mode: "open" });
-        const ctor = this.constructor as typeof Comp;
-        this.createProps(ctor);
-        this.render();
+    /**
+     * Creates dynamic getters and setters on the instance's prototype
+     * for all detected properties.
+     */
+    private propAccessors() {
+        const proto = Object.getPrototypeOf(this);
+        const ctor = proto.constructor;
+
+        if (Comp.wiredClasses.has(ctor)) return;
+
+        for (const key of Object.keys(this.properties)) {
+            this.defineProp(proto, key);
+        }
+
+        Comp.wiredClasses.add(ctor);
+    }
+
+    /**
+     * Defines a property and its `loading`/`error` accessors on the given prototype.
+     */
+    private defineProp(proto: any, key: string) {
+
+        // Main getter/setter
+        Object.defineProperty(proto, key, {
+            get(this: Comp) {
+                return this.properties[key]?.current;
+            },
+            set(this: Comp, value: any) {
+                const prop = this.properties[key];
+                if (!prop) return;
+                if (prop.current === value) return;
+
+                console.log(`setting ${key} from ${prop.current} to ${value}`);
+                prop.current = value;
+                this.update();
+            },
+            enumerable: true,
+            configurable: true,
+        });
+
+        // Loading state
+        Object.defineProperty(proto, `${key}_loading`, {
+            get(this: Comp) {
+                return this.properties[key]?.loading;
+            },
+            set(this: Comp, value: any) {
+                const prop = this.properties[key];
+                if (!prop) return;
+                if (prop.loading === value) return;
+
+                prop.loading = value;
+                this.update();
+            },
+            enumerable: true,
+            configurable: true,
+        });
+
+        // Error state
+        Object.defineProperty(proto, `${key}_error`, {
+            get(this: Comp) {
+                return this.properties[key]?.error;
+            },
+            set(this: Comp, value: any) {
+                const prop = this.properties[key];
+                if (!prop) return;
+                if (prop.error === value) return;
+
+                prop.error = value;
+                this.update();
+            },
+            enumerable: true,
+            configurable: true,
+        });
     }
 
     /**
