@@ -13,6 +13,15 @@ import { API, ApiResponse, FetchEntry } from './api.js';
 import { CSSConfig, Design } from "./design.js";
 import { Effects } from "./effects.js";
 
+type PropState<T = any> = {
+    default: T;
+    loading?: T;
+    error?: T;
+    current: T;
+};
+
+type Props = Record<string, PropState>;
+
 /**
  * # Comp
  * 
@@ -157,53 +166,45 @@ import { Effects } from "./effects.js";
  * }
  * ```
  */
-
 export abstract class Comp extends HTMLElement {
-    
     private api = new API();
     public effect = new Effects();
     private design = new Design();
 
-    private static _registry = new Set<string>();
+    private static registry_ = new Set<string>();
     protected asyncStore: Record<string, FetchEntry<any>> = {};
     private unsubscribers_: Array<() => void> = [];
     private listeners = new Map<String, EventListener>();
 
+    private static wiredClasses = new WeakSet<Function>();
+    protected properties: Record<string, PropState> = {};
+
+    private mounted = false;
+
+    constructor() {
+        super();
+        this.attachShadow({ mode: "open" });
+    }
 
     /**
-     * ## register
+     * Custom Elements hook run every time element is loaded, Jay uses it create and setup
+     * internal property getter and setters.
      * 
-     * Registers a `Comp` subclass as a custom element under the “comp-…” namespace.
-     * 
-     * ### Behavior 
-     * - Converts class name to kebab-case  
-     * - Prefixes the result with `"comp-"`  
-     * - Calls `customElements.define()` once, avoiding duplicate registrations  
-     * 
-     * ### Parameters
-     * - `ctor: typeof Comp`  
-     *   The subclass constructor that you want to register.  
-     * 
-     * ### Errors
-     * Throws an `Error` if stripping “Comp” yields an empty string (i.e. the class is  
-     * named just `"Comp"` or doesn’t end in `"Comp"`).  
-     * 
-     * ### Example
-     * ```ts
-     * export class UserLoginPageComp extends Comp {
-     *   // … your createHTML/createCSS/hook …
-     * 
-     *   // auto-register at load time
-     *   static {
-     *     Comp.register(this);
-     *   }
-     * }
-     * 
-     * // After import, <comp-user-login-page> is available in the DOM
-     * ```
+     * If the element has been rendered to the DOM then it is ignored.
      */
-    protected static register(ctor: typeof Comp) {
-    
+    connectedCallback() {
+        if (this.mounted) return;
+        this.mounted = true;
+
+        this.createProps();
+        this.propAccessors();
+        this.render();
+    }
+
+    /**
+     * Method internally builds an HTML Element based off the classname prefixed with 'comp-'.
+     */
+    private static register(ctor: typeof Comp) {
         const raw = ctor.name;
         if (!raw) throw new Error(`Can't auto-derive tag for ${ctor.name}`);
 
@@ -211,16 +212,139 @@ export abstract class Comp extends HTMLElement {
             .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
             .toLowerCase();
 
-        if (!Comp._registry.has(tag)) {
+        if (!Comp.registry_.has(tag)) {
             customElements.define(tag, ctor as unknown as CustomElementConstructor);
-            Comp._registry.add(tag);
+            Comp.registry_.add(tag);
         }
     }
 
-    constructor() {
-        super();
-        this.attachShadow({ mode: "open" });
-        this.render();
+    /**
+     * ## define
+     *
+     * Registers a `Comp` subclass as a custom element under the “comp-…” namespace.
+     *
+     * ### Behaviour
+     * Converts the component's class name into a valid tag name and performs a one-time
+     * registration with the browser’s Custom Elements registry.
+     *
+     * ### Errors
+     * Throws an `Error` if:
+     * - The class name is empty or  
+     * - The derived tag name would be an empty string  
+     *   (e.g. your class is literally named `Comp` or doesn’t end with any characters).
+     *
+     * ### Example
+     * ```ts
+     * import { Comp } from "../dist/comp.js";
+     *
+     * export class UserLoginPage extends Comp {
+     *   // … your createHTML/createCSS/hook …
+     * }
+     *
+     * // Register at load time
+     * UserLoginPage.define();
+     * ```
+     * ```html
+     * 
+     * <!-- Now you can use <comp-user-login-page> in your HTML -->
+     * <comp-user-login-page></comp-user-login-page>
+     * ```
+     */
+    public static define() {
+        this.register(this);
+    }
+
+    /**
+     * Scans the instance for properties that match the { default } pattern.
+     * Creates the internal `properties` map and removes those props from the instance.
+     */
+    private createProps() {
+        for (const key of Object.keys(this)) {
+            const val = (this as any)[key];
+            if (val && typeof val === "object" && "default" in val) {
+                const resolve = (v: any) => (typeof v === "function" ? v() : v);
+                this.properties[key] = {
+                    default: resolve(val.default),
+                    loading: resolve(val.loading),
+                    error: resolve(val.error),
+                    current: resolve(val.default),
+                };
+                delete (this as any)[key]; // remove the raw prop from the instance
+            }
+        }
+    }
+
+    /**
+     * Creates dynamic getters and setters on the instance's prototype
+     * for all detected properties.
+     */
+    private propAccessors() {
+        const proto = Object.getPrototypeOf(this);
+        const ctor = proto.constructor;
+
+        if (Comp.wiredClasses.has(ctor)) return;
+
+        for (const key of Object.keys(this.properties)) {
+            this.defineProp(proto, key);
+        }
+
+        Comp.wiredClasses.add(ctor);
+    }
+
+    /**
+     * Defines a property and its `loading`/`error` accessors on the given prototype.
+     */
+    private defineProp(proto: any, key: string) {
+
+        // Main getter/setter
+        Object.defineProperty(proto, key, {
+            get(this: Comp) {
+                return this.properties[key]?.current;
+            },
+            set(this: Comp, value: any) {
+                const prop = this.properties[key];
+                if (!prop) return;
+                if (prop.current === value) return;
+                prop.current = value;
+                this.update();
+            },
+            enumerable: true,
+            configurable: true,
+        });
+
+        // Loading state
+        Object.defineProperty(proto, `${key}_loading`, {
+            get(this: Comp) {
+                return this.properties[key]?.loading;
+            },
+            set(this: Comp, value: any) {
+                const prop = this.properties[key];
+                if (!prop) return;
+                if (prop.loading === value) return;
+
+                prop.loading = value;
+                this.update();
+            },
+            enumerable: true,
+            configurable: true,
+        });
+
+        // Error state
+        Object.defineProperty(proto, `${key}_error`, {
+            get(this: Comp) {
+                return this.properties[key]?.error;
+            },
+            set(this: Comp, value: any) {
+                const prop = this.properties[key];
+                if (!prop) return;
+                if (prop.error === value) return;
+
+                prop.error = value;
+                this.update();
+            },
+            enumerable: true,
+            configurable: true,
+        });
     }
 
     /**
@@ -274,7 +398,7 @@ export abstract class Comp extends HTMLElement {
 
         return rawArray.map(entry => {
             if (typeof entry === "string") return entry;
-            else return this.design.create(entry);    
+            else return this.design.create(entry);
         }).join("\n");
     }
 
@@ -328,12 +452,12 @@ export abstract class Comp extends HTMLElement {
         if (!this.shadowRoot) throw new Error("No shadow root");
 
         if (typeof this.beforeRender === "function") this.beforeRender();
-        
+
         const html = newHTML || this.createHTML();
-        const css  = newCSS || this.createCSS();
-       
+        const css = newCSS || this.createCSS();
+
         this.shadowRoot.innerHTML = this.createTemplate(html, this.compileCSSObjects(css));
-        
+
         if (typeof this.afterRender === "function") this.afterRender();
     }
 
@@ -382,10 +506,10 @@ export abstract class Comp extends HTMLElement {
      * }
      * ```
      */
-    public async request<T> (url: string, method: "GET" | "POST", data?: object): Promise<ApiResponse<T>> {
+    public async request<T>(url: string, method: "GET" | "POST", data?: object): Promise<ApiResponse<T>> {
         return this.api.request<T>(url, method, data);
     }
-    
+
     /**
      * ## submitForm
      * 
@@ -446,12 +570,12 @@ export abstract class Comp extends HTMLElement {
      */
     public async submitForm<T>(url: string, data: HTMLFormElement | FormData | Record<string, any>): Promise<ApiResponse<T>> {
         let formData: FormData;
-        
+
         if (data instanceof HTMLFormElement) formData = new FormData(data);
         else if (data instanceof FormData) formData = data;
         else {
             formData = new FormData();
-            for (const [k, v] of Object.entries(data)) { formData.append(k, String(v));}
+            for (const [k, v] of Object.entries(data)) { formData.append(k, String(v)); }
         }
 
         return this.api.submitForm<T>(url, formData);
@@ -464,7 +588,7 @@ export abstract class Comp extends HTMLElement {
      * that tracks loading, success and error states. Subsequent calls with the
      * same key return the cached result instead of re‐invoking the loader.
      * 
-     * ### Behavior
+     * ### Behaviour
      * - On first invocation the fetched data is stored within the component's `asyncStore`.
      * - On subsequent calls, the data is retrieved from `asyncStore`
      * 
@@ -499,7 +623,7 @@ export abstract class Comp extends HTMLElement {
     public fetchOnce<T>(key: string, loader: () => Promise<T>): FetchEntry<T> {
         let entry = this.asyncStore[key] as FetchEntry<T>;
         if (entry) return entry;
-        
+
         entry = { value: undefined, loading: true, error: undefined };
         this.asyncStore[key] = entry;
 
@@ -507,7 +631,7 @@ export abstract class Comp extends HTMLElement {
             entry.value = result;
             entry.error = undefined;
             entry.loading = false;
-            this.update();      
+            this.update();
         }).catch(err => {
             entry.error = err?.message || err;
             entry.loading = false;
@@ -634,6 +758,7 @@ export abstract class Comp extends HTMLElement {
      * ```
      */
     disconnectedCallback() {
+        this.mounted = false;
         this.unsubscribers_.forEach(unsub => unsub());
         this.unsubscribers_.length = 0;
     }
