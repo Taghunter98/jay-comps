@@ -179,14 +179,22 @@ export abstract class Comp extends HTMLElement {
     private static wiredClasses = new WeakSet<Function>();
     protected properties: Record<string, PropState> = {};
 
+    private mounted = false;
+
     constructor() {
         super();
         this.attachShadow({ mode: "open" });
     }
 
+    /**
+     * Custom Elements hook run every time element is loaded, Jay uses it create and setup
+     * internal property getter and setters.
+     * 
+     * If the element has been rendered to the DOM then it is ignored.
+     */
     connectedCallback() {
-        if ((this as any)._mounted) return;
-        (this as any)._mounted = true;
+        if (this.mounted) return;
+        this.mounted = true;
 
         this.createProps();
         this.propAccessors();
@@ -248,7 +256,7 @@ export abstract class Comp extends HTMLElement {
 
     /**
      * Scans the instance for properties that match the { default } pattern.
-     * Initialises the internal `properties` map and removes those props from the instance.
+     * Creates the internal `properties` map and removes those props from the instance.
      */
     private createProps() {
         for (const key of Object.keys(this)) {
@@ -297,8 +305,6 @@ export abstract class Comp extends HTMLElement {
                 const prop = this.properties[key];
                 if (!prop) return;
                 if (prop.current === value) return;
-
-                console.log(`setting ${key} from ${prop.current} to ${value}`);
                 prop.current = value;
                 this.update();
             },
@@ -752,6 +758,7 @@ export abstract class Comp extends HTMLElement {
      * ```
      */
     disconnectedCallback() {
+        this.mounted = false;
         this.unsubscribers_.forEach(unsub => unsub());
         this.unsubscribers_.length = 0;
     }
