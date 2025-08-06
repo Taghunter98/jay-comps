@@ -51,7 +51,7 @@ npx tsc
 
 To bundle your Jay components, you'll need to set up Webpack. Here’s a quick guide to get you started.
 
-1. Make sure your `package.json` includes this line:
+Make sure your `package.json` includes this line:
 
 ```json
 {
@@ -59,7 +59,7 @@ To bundle your Jay components, you'll need to set up Webpack. Here’s a quick g
 }
 ```
 
-2. Create a Webpack configuration file, `webpack.config.cjs`:
+Create a Webpack configuration file, `webpack.config.cjs`:
 
 ```js
 const path = require("path");
@@ -74,13 +74,13 @@ module.exports = {
 };
 ```
 
-3. In your `index.js`, import any components you want to use:
+In your `index.js`, import any components you want to use:
 
 ```js
 import "./helloworld.js"; // Your custom component
 ```
 
-4. After configuring Webpack, run:
+After configuring Webpack, run:
 
 ```bash
 npx webpack
@@ -100,10 +100,13 @@ Create a simple component with Jay to get started quickly.
 import { Comp } from "jay-comp";
 
 export class HelloWorld extends Comp {
-    hello = "Hello Jay!"; // Immutable prop
-    clicked = { default: false }; // Mutable prop
+    hello = "Hello Jay!"; // immutable prop
+    clicked = { default: false }; // mutable prop
 
-    template = (text, clicked) =>
+    template = (
+        text,
+        clicked // immutable function prop
+    ) =>
         clicked
             ? `<button class="btn clicked">${text}</button>`
             : `<button class="btn">${text}</button>`;
@@ -179,7 +182,7 @@ export class HelloWorld extends Comp {
 
 ## Jay Wiki
 
-For more in-depth guides on advanced features like lifecycle hooks, event handling, HTTP requests, and more, check out the [wiki](#).
+For more in-depth guides on advanced features like lifecycle hooks, event handling, HTTP requests, and more, check out the [wiki](https://github.com/Taghunter98/jay-comps/wiki).
 
 ## Contributing
 
