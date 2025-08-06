@@ -9,13 +9,19 @@
  * Licence:     Apache 2.0
  */
 
-/** Response type */
-    export interface ApiResponse<T> {
-        ok: boolean;
-        status: number;
-        data?: T;
-        error?: string;
-    }
+
+export interface ApiResponse<T> {
+    ok: boolean;
+    status: number;
+    data?: T;
+    error?: string;
+}
+
+export interface FetchEntry<T> {
+    value?: T;
+    loading: boolean;
+    error?: any;
+};
 
 /**
  * Class for HTTP requests.

@@ -1,32 +1,43 @@
-# Jay Components
+# The Jay Framework
 
 [![npm version](https://img.shields.io/npm/v/jay-comp)](https://www.npmjs.com/package/jay-comp)
 
-A lightweight, modular web-component library built in TypeScript. Jay manages rendering, styling, HTTP requests, and component lifecycle so you can focus on HTML, CSS, and behavior.
+**Jay** is a fast, lightweight, and powerful web component library built with TypeScript.
 
-<br>
+It allows you to rapidly build modern, high-performance user interfaces with minimal boilerplate.
 
-## Table of Contents
+With **Jay**, you can focus entirely on **behaviour** and **presentation** while it takes care of the underlying complexity: rendering, styling, and lifecycle management.
 
-- [Installation](#installation)  
-- [Bundling with Webpack](#bundling-with-webpack)  
-- [A Minimal Example](#a-minimal-example)  
-- [Core API](#core-api)  
-  - [The Comp Class](#the-comp-class)  
-  - [Overrideable Methods](#overrideable-methods)  
-  - [Helper Methods](#helper-methods)  
-- [Contributing & License](#contributing--license)  
+### Why Choose Jay?
+
+-   #### **Effortless Reactivity**
+
+    No need for complex state management. Jay’s reactive model automatically updates your UI when data changes, just modify properties and Jay takes care of the rest.
+
+-   #### **Scoped Styling**
+
+    Write your component styles directly within your JavaScript/TypeScript code, with support for responsive design, pseudo-classes, media queries,and more, automatically scoped to your component to avoid conflicts.
+
+-   #### **Component Lifecycle Made Easy**
+
+    Build components with familiar lifecycle hooks. Create HTML, CSS, and handle events, all within one class—without the need to juggle multiple frameworks or tools.
+
+-   #### **Minimalistic, Yet Powerful**
+
+    Jay provides a minimal API surface that handles all the essential functionality you'd expect in a component library, including helpful abstractions for HTTP reuquests, event listener publishing/subscribing and more.
 
 <br>
 
 ## Installation
 
-**Via npm**  
+**Via npm:**
+
 ```bash
 npm install --save-dev jay-comp webpack webpack-cli
 ```
 
-**Via Git**  
+**Via Git (alternative):**
+
 ```bash
 git clone https://github.com/Taghunter98/jay-comps.git
 cd jay-comps
@@ -36,380 +47,148 @@ npx tsc
 
 <br>
 
-## Bundling with Webpack
+## Setting Up Webpack
 
-Ensure your `package.json` includes:
+To bundle your Jay components, you'll need to set up Webpack. Here’s a quick guide to get you started.
+
+Make sure your `package.json` includes this line:
+
 ```json
 {
-  "type": "module",
+    "type": "module"
 }
 ```
 
-**index.js**  
-```js
-import { Comp } from "jay-comp";
-import "./helloworld.js";  // Your custom components
-```
+Create a Webpack configuration file, `webpack.config.cjs`:
 
-**webpack.config.cjs**  
 ```js
 const path = require("path");
 
 module.exports = {
-  entry: "./index.js",
-  mode: "development",
-  output: {
-    filename: "bundle.js",
-    path: path.resolve(__dirname, "dist")
-  }
+    entry: "./index.js", // Entry file where you import your components
+    mode: "development", // Change to "production" for minification
+    output: {
+        filename: "bundle.js",
+        path: path.resolve(__dirname, "dist"),
+    },
 };
 ```
 
-After building:
+In your `index.js`, import any components you want to use:
+
+```js
+import "./helloworld.js"; // Your custom component
+```
+
+After configuring Webpack, run:
+
 ```bash
 npx webpack
 ```
 
-Include in your HTML:
-```html
-<script type="module" src="./dist/bundle.js"></script>
-```
+This will bundle your components and create a `bundle.js` file in the `dist/` directory.
 
 <br>
 
-## A Minimal Example
+## Getting Started
 
-**helloworld.js**  
+Create a simple component with Jay to get started quickly.
+
+**helloworld.js**
+
 ```js
 import { Comp } from "jay-comp";
 
-class HelloWorld extends Comp {
-    greeting_;
-    
-    beforeRender() {
-        this.greeting_ = "Hello Jay!";
-    }
-    
+export class HelloWorld extends Comp {
+    hello = "Hello Jay!"; // immutable prop
+    clicked = { default: false }; // mutable prop
+
+    template = (
+        text,
+        clicked // immutable function prop
+    ) =>
+        clicked
+            ? `<button class="btn clicked">${text}</button>`
+            : `<button class="btn">${text}</button>`;
+
     createHTML() {
-        return `<h1 class="heading">${this.greeting_}</h1>`;
+        return this.template(this.hello, this.clicked);
     }
-    
+
     createCSS() {
-        return {
-            class: "heading",
-            colour: "#142985",
-            padding: [20, 40],
-            fontSizePt: 48,
-            media: {
-                maxWidthBp: 600,
-                fontSizePt: 24,
-                padding: [8, 16]
-            }
-        };
+        return [
+            {
+                class: "btn",
+                background: "black",
+                colour: "white",
+                padding: [9, 24],
+            },
+            {
+                class: "clicked",
+                background: "red",
+            },
+        ];
     }
 
     afterRender() {
-        this.query("h1")
-            .addEventListener("click", () => alert("This is my first Jay Component!"));
+        this.query(".btn").addEventListener("click", () => {
+            this.clicked = true; // Triggers re-render
+        });
     }
 
-    static { Comp.register(this); }
+    static {
+        this.define();
+    }
 }
 ```
 
-**index.js**  
-```js
-import { Comp } from "jay-comp";
-import "./helloworld.js";
-```
+**index.html**
 
-**index.html**  
 ```html
 <!DOCTYPE html>
 <html>
-  <body>
-    <comp-hello-world></comp-hello-world>
-    <script type="module" src="./dist/bundle.js"></script>
-  </body>
+    <body>
+        <!-- Our new HTML Element -->
+        <comp-hello-world></comp-hello-world>
+
+        <script type="module" src="./dist/bundle.js"></script>
+        <!-- For Webpack users -->
+    </body>
 </html>
 ```
 
-Open `index.html` to see your component in action.
+<br>
+
+## Core Concepts
+
+**Props**
+
+-   Immutable props don't trigger re-renders.
+-   Mutable props trigger re-renders when updated.
+
+**Templating**
+
+-   Define your template in a function, and use `createHTML()` to render it.
+
+**CSS-in-JS**
+
+-   Write scoped styles directly in JavaScript with `createCSS()`.
+
+**Reactivity**
+
+-   Changing a mutable prop triggers the component to re-render.
 
 <br>
 
-## Core API
+## Jay Wiki
 
-### The Comp Class
+For more in-depth guides on advanced features like lifecycle hooks, event handling, HTTP requests, and more, check out the [wiki](https://github.com/Taghunter98/jay-comps/wiki).
 
-`Comp` is Jay’s base class. It handles:
-- **Shadow DOM** setup  
-- **Template injection** via `render()`  
-- **Scoped CSS** through `createCSS()`  
-- **Lifecycle hooks** (`createHTML()`, `createCSS()`, `hook()`)  
-- **HTTP requests** (`request()`, `submitForm()`)
+## Contributing
 
-#### Lifecycle Flow
+Jay is licensed under the **Apache 2.0 License**. Contributions are welcome!
 
-1. **Constructor**  
-   - Attaches an open shadow root  
-   - Calls `render()`
-
-2. **render()**  
-   - Injects output of `createHTML()` and `createCSS()` into shadow root  
-   - Calls `hook()`
-
-3. **hook()**  
-   - User-defined for wiring up logic (events, data fetch, etc.)
-
-
-<br>
-
-### Overrideable Methods
-
-#### `createHTML(): string`
-
-Define your component’s inner markup:
-```js
-createHTML() {
-  return `<div class="container">${this.content_}</div>`;
-}
-```
-
-#### `createCSS(): string`
-
-Define scoped styles via the CSS compiler:
-```js
-createCSS() {
-  return this.css({
-    class:         "container",
-    display:       "flex",
-    padding:       [10, 15],
-    media: {
-      maxWidthBp: 600,
-      flexDirction: "column"
-    }
-  });
-}
-```
-
-#### `beforeRender(): void`
-
-Run before-render logic:
-```js
-beforeRender() {
-  if (!this.greeting_) this.greeting_ = "Hello World!"
-}
-```
-
-#### `afterRender(): void`
-
-Run post-render logic:
-```js
-afterRender() {
-  this.shadowRoot
-    .querySelector(".container")
-    .addEventListener("click", () => console.log("Clicked!"));
-}
-```
-
-#### `static register(componentClass): void`
-
-Registers the Comp as a custom element.  
-Class names convert to kebab-case and prefix `comp-`:
-
-```js
-static { Comp.register(this); }
-// MyButtonComp -> <comp-my-button-comp>
-```
-
-<br>
-
-### Helper Methods
-
-#### `update(html?: string, css?: string): void`
-
-Re-render markup and/or styles at runtime:
-```js
-set title(text) {
-  this.title_ = text;
-  this.update();  // Re-runs createHTML/createCSS
-}
-```
-
-#### `getById(id: string): HTMLElement | null`
-
-Returns an element from the Shadow DOM by its ID. Automatically strips a leading # if present.
-
-```ts
-// Lookup without '#'
-const btn = this.getById<HTMLButtonElement>('submitBtn');
-btn?.addEventListener('click', () => console.log('Clicked'));
-
-// Lookup with '#'
-const input = this.getById<HTMLInputElement>('#usernameInput');
-if (input) input.value = 'alice';
-```
-
-#### `query(sel: string): Element | null`
-
-Selects the first element matching a given CSS selector.
-
-```ts
-// Select an active list item
-const item = this.query<HTMLLIElement>('ul > li.active');
-
-// Select an input by attribute
-const email = this.query<HTMLInputElement>('input[name="email"]');
-```
-
-#### `queryAll(sel: string): NodeListOf<Element>`
-
-Selects all elements matching a given CSS selector. Returns a live NodeList, even if no matches are found.
-
-```ts
-// Style all active items
-const items = this.queryAll<HTMLLIElement>('ul > li.active');
-items.forEach(li => li.style.color = 'red');
-
-// Disable all buttons in the shadow DOM
-const buttons = this.queryAll<HTMLButtonElement>('button');
-buttons.forEach(btn => btn.disabled = true);
-```
-
-#### `css(config: CSSConfig): string`
-
-Compiles a single config object into scoped CSS. Supports a wide range of suffix-based operators:
-
-#### Rules
-- CamelCase -> kebab-case
-- UK spellings (colour, centre, behaviour)
-- Media queries must have a `Bp` keyword for defining breakpoints.
-
-**Examples**
-
-A basic box layout:
-```js
-const config1 = {
-  class:         "box",
-  display:       "flex",
-  flexDirection: "column",
-  padding:       10,
-  opacity:       0.8
-};
-console.log(this.css(config1));
-```
-
-Using arrays, percent, and media:
-```js
-const config2 = {
-  class:        "container",
-  colour:       "white",
-  border:       ["solid", 2, "black"],
-  borderRadius: [4, 8],
-  widthPercent: 75,
-  media: {
-    maxWidthBp: 600,
-    padding:    [16, 32]
-  }
-};
-console.log(this.css(config2));
-```
-
-Pseudo-class:
-```js
-const config3 = {
-  class:          "btn",
-  backgroundVar:  "blue100",
-  pseudoClass:    "hover"
-};
-console.log(this.css(config3));
-```
-
-### CSSConfig Operator Reference
-
-| Operator               | CSS Output                          | Example Config                          | Compiled CSS Snippet                              |
-|------------------------|--------------------------------------|------------------------------------------|---------------------------------------------------|
-| *(default number)*     | `px` appended (except `0`)           | `margin: 16`                             | `margin: 16px;`                                   |
-| Percent                | `%`                                  | `widthPercent: 50`                       | `width: 50%;`                                     |
-| Var                    | `var(--…)`                           | `colorVar: "blue100"`                    | `color: var(--blue100);`                          |
-| Url                    | `url(...)`                           | `backgroundImageUrl: "hero.jpg"`         | `background-image: url(hero.jpg);`                |
-| Calc                   | `calc(...)`                          | `widthCalc: "100% - 32px"`               | `width: calc(100% - 32px);`                       |
-| Em / Rem               | `em` / `rem`                         | `paddingEm: 1.5`, `marginRem: 2`         | `padding: 1.5em;`, `margin: 2rem;`                |
-| Vw / Vh / Vmin / Vmax  | viewport units                      | `heightVh: 80`, `gapVmax: 2`             | `height: 80vh;`, `gap: 2vmax;`                    |
-| Ch / Ex                | character-based units               | `textIndentCh: 2`, `fontSizeEx: 1`       | `text-indent: 2ch;`, `font-size: 1ex;`            |
-| Pt / Pc                | print-based units                   | `fontSizePt: 12`                         | `font-size: 12pt;`                                |
-| In / Cm / Mm / Q       | absolute/metric lengths             | `widthCm: 10`, `borderQ: 4`              | `width: 10cm;`, `border: 4q;`                     |
-| Fr                     | grid fraction                       | `gridTemplateColumnsFr: [1,2]`           | `grid-template-columns: 1fr 2fr;`                 |
-| S / Ms                 | time units                          | `transitionDurationS: 0.3`, `delayMs: 200`| `transition-duration: 0.3s;`, `delay: 200ms;`     |
-| Deg / Rad / Grad / Turn| angle units                         | `rotateDeg: 45`, `skewRad: 0.5`          | `transform: rotate(45deg);`, `skew(0.5rad);`      |
-| Dpi / Dpcm / Dppx      | resolution units                    | `resolutionDpi: 300`                     | `resolution: 300dpi;`                             |
-| Hz / KHz               | frequency                           | `audioRateHz: 60`, `signalKHz: 2.4`      | `audio-rate: 60Hz;`, `signal: 2.4kHz;`            |
-| Raw strings / Keywords | passed through as-is               | `display: "flex"`                        | `display: flex;`                                  |
-| Array shorthand        | space-separated values              | `padding: [8,16]`                        | `padding: 8px 16px;`                              |
-| pseudoClass            | pseudo-selector suffix              | `pseudoClass: "hover"`                   | `.my-class:hover { … }`                           |
-| Breakpoint operator (`Bp` suffix) | media query header        | `media: { maxWidthBp: 600 }`             | `@media (max-width: 600px) { … }`                 |
-
-<br>
-
-### HTTP Requests API
-
-#### `request<T>(url: string, method: "GET"|"POST", data?: object): Promise<ApiResponse<T>>`
-
-Perform JSON fetch with error handling.
-```ts
-// GET
-const usersResp = await this.request<User[]>("/api/users", "GET");
-if (usersResp.ok) {
-    console.log("Got users:", usersResp.data);
-} else {
-   console.error("Fetch users failed:", usersResp.status, usersResp.error);
-}
-
-// POST
-const loginResp = await this.request<{ token: string }>("/api/login", "POST",{ user: "alice", pass: "s3cret" });
-
-if (loginResp.ok) {
-   console.log("JWT =", loginResp.data.token);
-} else {
-   console.error("Login error:", loginResp.status, loginResp.error);
-}
-```
-
-#### `submitForm<T>(url: string, data: HTMLFormElement|FormData|object): Promise<ApiResponse<T>>`
-
-Send multipart/form-data for uploads.
-
-```ts
-// 1) HTMLFormElement
-const form = document.querySelector("form#profile")!;
-const res1 = await this.submitForm<{ success: boolean }>(
-  "/api/profile", form
-);
-
-// 2) FormData
-const fd = new FormData();
-fd.append("avatar", fileInput.files[0]);
-const res2 = await this.submitForm<{ url: string }>(
-  "/api/upload", fd
-);
-
-// 3) Plain object
-const data = { name: "Alice", age: 30, newsletter: true };
-const res3 = await this.submitForm<{ status: "ok" }>(
-  "/api/subscribe", data
-);
-```
-
-<br>
-
-## Contributing & License
-
-Jay is licensed under the **Apache 2.0 License**. Contributions are welcome!  
-
-1. Fork the repo  
-2. Create a feature branch  
-3. Commit your changes  
-4. Open a Pull Request  
-
-For issues or feedback, please open an issue or email the maintainer.  
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Open a pull request
