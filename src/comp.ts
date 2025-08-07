@@ -378,11 +378,10 @@ export abstract class Comp extends HTMLElement {
         if (!this.shadowRoot) throw new Error("Shadow root is not available.");
 
         if (typeof this.beforeRender === "function") this.beforeRender();
-        const html = this.buildHTML();
-        let css = this.css ? this.css : "";
-        if (typeof css === "function") css = css.call(this);
 
-        console.log("CSS: " + this.css);
+        const html = this.buildHTML();
+        const css = this.buildCSS();
+
         this.shadowRoot.innerHTML = this.createTemplate(
             html,
             this.compileCSSObjects(css)
@@ -410,6 +409,12 @@ export abstract class Comp extends HTMLElement {
         }
 
         return html;
+    }
+
+    private buildCSS(): Array<CSSConfig> | CSSConfig | string {
+        let css = this.css ? this.css : "";
+        if (typeof css === "function") css = css.call(this);
+        return css;
     }
 
     /**
@@ -482,8 +487,8 @@ export abstract class Comp extends HTMLElement {
 
         if (typeof this.beforeRender === "function") this.beforeRender();
 
-        const html = newHTML || this.buildHTML();
-        const css = newCSS || this.createCSS();
+        const html = this.buildHTML();
+        const css = this.buildCSS();
 
         this.shadowRoot.innerHTML = this.createTemplate(
             html,
@@ -924,122 +929,6 @@ export abstract class Comp extends HTMLElement {
         </style>
         `;
     }
-
-    /**
-     * ## createHTML
-     *
-     * Generates the component’s inner HTML as a string.
-     *
-     * ### Behaviour
-     * - Must be overridden by subclasses to return the HTML fragment
-     *   that represents this component’s structure.
-     * - Should not include `<style>` tags or host-level wrappers.
-     *
-     * ### Returns
-     * - `string`: HTML markup to inject into the shadow root.
-     *
-     * ### Example
-     * ```js
-     * createHTML() {
-     *   return `
-     *     <button class="btn">${this.text}</button>
-     *   `;
-     * }
-     * ```
-     */
-    protected abstract createHTML(): string;
-
-    /**
-     * ## createCSS
-     *
-     * Generates the component’s CSS rules as a string, including
-     * standard selectors, media queries and keyframes.
-     *
-     * ### Behaviour
-     * - Subclasses override this to return a `CSSConfig` object or array of them.
-     * - Optional British or American English spellings for CSS properties.
-     * - Each config may define:
-     *   - `class` or omit for `:host` rules
-     *   - CSS properties in camelCase, with optional operator suffixes
-     *   - `media` for breakpoint-based overrides
-     *   - `keyframes` for pure or hybrid animation blocks
-     * - Internally uses `parseProperties` to handle suffix operators and units.
-     *
-     * ### Operators
-     * Append these suffixes to property names to change units or functions:
-     * - `Percent` -> `%`
-     * - `Var`     -> `var(--<value>)`
-     * - `Url`     -> `url(<value>)`
-     * - `Calc`    -> `calc(<value>)`
-     * - `Em`      -> `em`
-     * - `Rem`     -> `rem`
-     * - `Vw`      -> `vw`
-     * - `Vh`      -> `vh`
-     * - `Vmin`    -> `vmin`
-     * - `Vmax`    -> `vmax`
-     * - `Ch`      -> `ch`
-     * - `Ex`      -> `ex`
-     * - `Pt`      -> `pt`
-     * - `Pc`      -> `pc`
-     * - `In`      -> `in`
-     * - `Cm`      -> `cm`
-     * - `Mm`      -> `mm`
-     * - `Fr`      -> `fr`
-     * - `S`       -> `s`
-     * - `Ms`      -> `ms`
-     * - `Deg`     -> `deg`
-     * - `Rad`     -> `rad`
-     * - `Grad`    -> `grad`
-     * - `Turn`    -> `turn`
-     * - `Dpi`     -> `dpi`
-     * - `Dpcm`    -> `dpcm`
-     * - `Dppx`    -> `dppx`
-     * - `Q`       -> `q`
-     * - `Hz`      -> `Hz`
-     * - `KHz`     -> `kHz`
-     * - `Bp`      -> Sets the breakpoint (media) e.g `maxWidthBp: 600`
-     *
-     * ### Returns
-     * - `string`: Full CSS rules to inject inside `<style>`.
-     *
-     * ### Examples
-     * ```ts
-     * createCSS() {
-     *   return [
-     *     { class: "btn",
-     *       backgroundVar: "primary",       // var(--primary)
-     *       colour: "white",
-     *       padding: [10, 20],               // "10px 20px"
-     *       borderRadiusPercent: 50,         // "50%"
-     *       fontSizePt: 16,                  // "16pt"
-     *       animation: ["flyIn", "2s", "ease"],
-     *       media: {
-     *         maxWidthBp: 600,               // handled as @media (max-width:600px)
-     *         padding: 5,
-     *         colourVar: "accent80"
-     *       }
-     *     },
-     *     { keyframes: {
-     *         name: "flyIn",
-     *         from: {
-     *           transform: ["translateX(-100%)","rotate(-10deg)"],
-     *           opacity: 0
-     *         },
-     *         "50%": {
-     *           topPx: 50,
-     *           opacity: 0.5
-     *         },
-     *         to: {
-     *           transform: "translateX(0)",
-     *           opacity: 1
-     *         }
-     *       }
-     *     }
-     *   ];
-     * }
-     * ```
-     */
-    protected abstract createCSS(): Array<CSSConfig> | CSSConfig;
 
     /**
      * ## afterRender
