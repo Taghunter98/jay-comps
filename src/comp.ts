@@ -169,16 +169,21 @@ export abstract class Comp extends HTMLElement {
     public effect = new Effects();
     private design = new Design();
 
-    private static registry_ = new Set<string>();
-    protected asyncStore: Record<string, FetchEntry<any>> = {};
-    private unsubscribers_: Array<() => void> = [];
+    // Tracks component registration
+    private static registry = new Set<string>();
+
+    // Tracks active event listeners and listeners to be unsubscribed
+    private unsubscribers: Array<() => void> = [];
     private listeners = new Map<String, EventListener>();
 
-    private static wiredClasses = new WeakSet<Function>();
+    // Properties and prop accessor methods (Getter/Setter)
+    private static definedAccessors = new WeakSet<Function>();
     protected properties: Record<string, PropState> = {};
 
+    // Tracks component state
     private mounted = false;
 
+    // Component template attributes
     private html!:
         | string
         | (() => string)
@@ -215,12 +220,12 @@ export abstract class Comp extends HTMLElement {
         const tag =
             "comp-" + raw.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
 
-        if (!Comp.registry_.has(tag)) {
+        if (!Comp.registry.has(tag)) {
             customElements.define(
                 tag,
                 ctor as unknown as CustomElementConstructor
             );
-            Comp.registry_.add(tag);
+            Comp.registry.add(tag);
         }
     }
 
@@ -245,6 +250,8 @@ export abstract class Comp extends HTMLElement {
      *
      * export class UserLoginPage extends Comp {
      *   // … your createHTML/createCSS/hook …
+     *
+     *   static { this.define(); } // optionally define internally
      * }
      *
      * // Register at load time
@@ -325,13 +332,13 @@ export abstract class Comp extends HTMLElement {
         const proto = Object.getPrototypeOf(this);
         const ctor = proto.constructor;
 
-        if (Comp.wiredClasses.has(ctor)) return;
+        if (Comp.definedAccessors.has(ctor)) return;
 
         for (const key of Object.keys(this.properties)) {
             this.defineProp(proto, key);
         }
 
-        Comp.wiredClasses.add(ctor);
+        Comp.definedAccessors.add(ctor);
     }
 
     /**
@@ -448,6 +455,9 @@ export abstract class Comp extends HTMLElement {
         this.runPostRenderHooks();
     }
 
+    /**
+     * Method runs all callback functions from the properties map.
+     */
     private runPostRenderHooks() {
         for (const key in this.properties) {
             const prop = this.properties[key];
@@ -458,6 +468,9 @@ export abstract class Comp extends HTMLElement {
         }
     }
 
+    /**
+     * Method runs all on render hooks from the properties map.
+     */
     private runOnRenderHooks() {
         for (const key in this.properties) {
             const prop = this.properties[key];
@@ -468,6 +481,11 @@ export abstract class Comp extends HTMLElement {
         }
     }
 
+    /**
+     * Helper methods builds HTML from the components html attribute.
+     *
+     * Method takes into account functions and nested statements.
+     */
     private buildHTML(input?: any): string {
         let html = "";
         const source = input ?? this.html;
@@ -489,6 +507,9 @@ export abstract class Comp extends HTMLElement {
         return html;
     }
 
+    /**
+     * Helper method builds CSS from the components css attribute.
+     */
     private buildCSS(): Array<CSSConfig> | CSSConfig | string {
         let css = this.css ? this.css : "";
         if (typeof css === "function") css = css.call(this);
@@ -524,6 +545,20 @@ export abstract class Comp extends HTMLElement {
         }
 
         return out;
+    }
+
+    /**
+     * ## setProp
+     */
+    public setProp(key: string, value: any) {
+        for (const k in this.properties) {
+            const prop = this.properties[k];
+            if (prop.current == "object") {
+                for (const p in prop.current) {
+                    if (p === key) console.log("Found prop");
+                }
+            }
+        }
     }
 
     /**
@@ -656,68 +691,6 @@ export abstract class Comp extends HTMLElement {
     }
 
     /**
-     * ## fetchOnce
-     *
-     * Fetches data exactly once for a given key and returns a live cache entry
-     * that tracks loading, success and error states. Subsequent calls with the
-     * same key return the cached result instead of re‐invoking the loader.
-     *
-     * ### Behaviour
-     * - On first invocation the fetched data is stored within the component's `asyncStore`.
-     * - On subsequent calls, the data is retrieved from `asyncStore`
-     *
-     * ### Type Parameters
-     * - `T` – The expected element type.
-     *
-     * ### Parameters
-     * - `key` (`string`): The desired key from the request response.
-     * - `loader` (`Promise<T>`): A function that returns a `Promise<T>`. Called only once.
-     *
-     * ### Returns
-     * `FetchEntry<T>` – the fetched response object.
-     *
-     * ### Example
-     * ```ts
-     *
-     * // TypeScript
-     * createHTML() {
-     *   const { value: fact, loading, error } = this.fetchOnce<string>(
-     *     "catFact",
-     *     () => this.request("/fact", "GET")
-     *          .then(res => res.ok ? res.data.fact : Promise.reject(res.error))
-     *   );
-     *
-     *   if (loading) return `<h1>Loading a random cat fact…</h1>`;
-     *   if (error) return `<h1>Failed to load fact: ${error}</h1>`;
-     *
-     *   return `<h1 class="fact">${fact}</h1>`;
-     * }
-     * ```
-     */
-    public fetchOnce<T>(key: string, loader: () => Promise<T>): FetchEntry<T> {
-        let entry = this.asyncStore[key] as FetchEntry<T>;
-        if (entry) return entry;
-
-        entry = { value: undefined, loading: true, error: undefined };
-        this.asyncStore[key] = entry;
-
-        loader()
-            .then((result) => {
-                entry.value = result;
-                entry.error = undefined;
-                entry.loading = false;
-                this.update();
-            })
-            .catch((err) => {
-                entry.error = err?.message || err;
-                entry.loading = false;
-                this.update();
-            });
-
-        return entry;
-    }
-
-    /**
      * ## publish
      *
      * Dispatches a custom event from this element with an optional payload.
@@ -813,7 +786,7 @@ export abstract class Comp extends HTMLElement {
             this.listeners.delete(name);
         };
 
-        if (autoCleanup) this.unsubscribers_.push(unsubscribe);
+        if (autoCleanup) this.unsubscribers.push(unsubscribe);
 
         return unsubscribe;
     }
@@ -837,8 +810,8 @@ export abstract class Comp extends HTMLElement {
      */
     disconnectedCallback() {
         this.mounted = false;
-        this.unsubscribers_.forEach((unsub) => unsub());
-        this.unsubscribers_.length = 0;
+        this.unsubscribers.forEach((unsub) => unsub());
+        this.unsubscribers.length = 0;
     }
 
     /**
