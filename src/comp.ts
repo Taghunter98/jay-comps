@@ -14,13 +14,10 @@ import { CSSConfig, Design } from "./design.js";
 import { Effects } from "./effects.js";
 
 type PropState<T = any> = {
-    default: T;
-    loading?: T;
-    error?: T;
+    value: T;
+    callback?: T;
     current: T;
 };
-
-type Props = Record<string, PropState>;
 
 /**
  * # Comp
@@ -269,14 +266,23 @@ export abstract class Comp extends HTMLElement {
     private createProps() {
         for (const key of Object.keys(this)) {
             const val = (this as any)[key];
-            if (val && typeof val === "object" && "value" in val) {
+
+            if (
+                val &&
+                typeof val === "object" &&
+                ("value" in val || "callback" in val)
+            ) {
                 const resolve = (v: any) => (typeof v === "function" ? v() : v);
+
                 this.properties[key] = {
-                    default: resolve(val.value),
-                    loading: resolve(val.loading),
-                    error: resolve(val.error),
+                    value: resolve(val.value),
+                    callback:
+                        typeof val.callback === "function"
+                            ? val.callback
+                            : undefined,
                     current: resolve(val.value),
                 };
+
                 delete (this as any)[key];
             }
             // define HTML/CSS
@@ -377,7 +383,53 @@ export abstract class Comp extends HTMLElement {
     public render(): void {
         if (!this.shadowRoot) throw new Error("Shadow root is not available.");
 
-        if (typeof this.beforeRender === "function") this.beforeRender();
+        const html = this.buildHTML();
+        const css = this.buildCSS();
+        console.log("Building template...");
+        this.shadowRoot.innerHTML = this.createTemplate(
+            html,
+            this.compileCSSObjects(css)
+        );
+        console.log("Running hooks...");
+        this.runPostRenderHooks();
+    }
+
+    /**
+     * ## update
+     *
+     * Re-renders the component by injecting fresh HTML and CSS into its shadow root.
+     *
+     * ### Behaviour
+     * - If both `newHTML` and `newCSS` are supplied, uses those values directly.
+     * - If either argument is omitted, calls the corresponding
+     *   `createHTML()` or `createCSS()` override to regenerate the missing piece.
+     * - Throws if the component’s shadow root is not attached.
+     * - After updating the DOM, invokes `hook()` so event listeners and other logic
+     *   are wired up again.
+     *
+     * ### Parameters
+     * - `newHTML?` (`string`): Optional HTML fragment to inject.
+     *   If omitted, runs `this.createHTML()`.
+     * - `newCSS?` (`string`): Optional CSS string to inject.
+     *   If omitted, runs `this.createCSS()`.
+     *
+     * ### Example
+     * ```js
+     * // Case 1: update both HTML and CSS explicitly
+     * this.update(
+     *   `<p>${this.message}</p>`,
+     *   this.css({ color: "red" })
+     * );
+     *
+     * // Case 2: regenerate from your subclass methods
+     * set message(text) {
+     *   this.message = text;
+     *   this.update();         // calls createHTML/createCSS internally
+     * }
+     * ```
+     */
+    update(newHTML?: string, newCSS?: Array<CSSConfig>): void {
+        if (!this.shadowRoot) throw new Error("No shadow root");
 
         const html = this.buildHTML();
         const css = this.buildCSS();
@@ -386,8 +438,15 @@ export abstract class Comp extends HTMLElement {
             html,
             this.compileCSSObjects(css)
         );
+    }
 
-        if (typeof this.afterRender === "function") this.afterRender();
+    private runPostRenderHooks() {
+        for (const key in this.properties) {
+            const prop = this.properties[key];
+            if (prop && typeof prop.callback === "function") {
+                prop.callback.call(this);
+            }
+        }
     }
 
     private buildHTML(input?: any): string {
@@ -446,56 +505,6 @@ export abstract class Comp extends HTMLElement {
         }
 
         return out;
-    }
-
-    /**
-     * ## update
-     *
-     * Re-renders the component by injecting fresh HTML and CSS into its shadow root.
-     *
-     * ### Behaviour
-     * - If both `newHTML` and `newCSS` are supplied, uses those values directly.
-     * - If either argument is omitted, calls the corresponding
-     *   `createHTML()` or `createCSS()` override to regenerate the missing piece.
-     * - Throws if the component’s shadow root is not attached.
-     * - After updating the DOM, invokes `hook()` so event listeners and other logic
-     *   are wired up again.
-     *
-     * ### Parameters
-     * - `newHTML?` (`string`): Optional HTML fragment to inject.
-     *   If omitted, runs `this.createHTML()`.
-     * - `newCSS?` (`string`): Optional CSS string to inject.
-     *   If omitted, runs `this.createCSS()`.
-     *
-     * ### Example
-     * ```js
-     * // Case 1: update both HTML and CSS explicitly
-     * this.update(
-     *   `<p>${this.message}</p>`,
-     *   this.css({ color: "red" })
-     * );
-     *
-     * // Case 2: regenerate from your subclass methods
-     * set message(text) {
-     *   this.message = text;
-     *   this.update();         // calls createHTML/createCSS internally
-     * }
-     * ```
-     */
-    update(newHTML?: string, newCSS?: Array<CSSConfig>): void {
-        if (!this.shadowRoot) throw new Error("No shadow root");
-
-        if (typeof this.beforeRender === "function") this.beforeRender();
-
-        const html = this.buildHTML();
-        const css = this.buildCSS();
-
-        this.shadowRoot.innerHTML = this.createTemplate(
-            html,
-            this.compileCSSObjects(css)
-        );
-
-        if (typeof this.afterRender === "function") this.afterRender();
     }
 
     /**
@@ -929,50 +938,4 @@ export abstract class Comp extends HTMLElement {
         </style>
         `;
     }
-
-    /**
-     * ## afterRender
-     *
-     * Wires up component-specific logic after rendering.
-     *
-     * ### Behaviour
-     * - Must be overridden by subclasses.
-     * - Called automatically after `render()` injects HTML & CSS.
-     * - Use `this.shadowRoot` to query elements inside the shadow DOM.
-     *
-     * ### Returns
-     * - `void`
-     *
-     * ### Example
-     * ```js
-     * afterRender() {
-     *   const btn = this.shadowRoot.querySelector('button');
-     *   btn.addEventListener('click', () => {
-     *     console.log('Clicked!', this.text);
-     *   });
-     * }
-     * ```
-     */
-    protected abstract afterRender(): void;
-
-    /**
-     * ## afterRender
-     *
-     * Wires up component-specific logic before rendering.
-     *
-     * ### Behaviour
-     * - Must be overridden by subclasses.
-     * - Called automatically before `render()` injects HTML & CSS.
-     *
-     * ### Returns
-     * - `void`
-     *
-     * ### Example
-     * ```js
-     * beforeRender() {
-     *   // example
-     * }
-     * ```
-     */
-    protected abstract beforeRender(): void;
 }
