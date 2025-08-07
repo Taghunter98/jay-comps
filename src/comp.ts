@@ -269,19 +269,39 @@ export abstract class Comp extends HTMLElement {
     private createProps() {
         for (const key of Object.keys(this)) {
             const val = (this as any)[key];
-            if (val && typeof val === "object" && "default" in val) {
+            if (val && typeof val === "object" && "value" in val) {
                 const resolve = (v: any) => (typeof v === "function" ? v() : v);
                 this.properties[key] = {
-                    default: resolve(val.default),
+                    default: resolve(val.value),
                     loading: resolve(val.loading),
                     error: resolve(val.error),
-                    current: resolve(val.default),
+                    current: resolve(val.value),
                 };
-                delete (this as any)[key]; // remove the raw prop from the instance
+                delete (this as any)[key];
             }
             // define HTML/CSS
-            if (val && typeof val === "object" && "html" in val) {
+            else if (
+                val &&
+                typeof val === "object" &&
+                "html" in val &&
+                "css" in val
+            ) {
                 this.html = val;
+
+                const rawCSS = val.css;
+                if (rawCSS && typeof rawCSS === "object" && "value" in rawCSS) {
+                    this.css = rawCSS.value;
+                } else {
+                    this.css = rawCSS;
+                }
+            } else if (val && typeof val === "object" && "html" in val) {
+                this.html = val;
+            } else if (val && typeof val === "object" && "css" in val) {
+                const rawCSS = val.css;
+                this.css =
+                    typeof rawCSS === "object" && "value" in rawCSS
+                        ? rawCSS.value
+                        : rawCSS;
             }
         }
     }
@@ -307,7 +327,6 @@ export abstract class Comp extends HTMLElement {
      * Defines a property and its `loading`/`error` accessors on the given prototype.
      */
     private defineProp(proto: any, key: string) {
-        // Main getter/setter
         Object.defineProperty(proto, key, {
             get(this: Comp) {
                 return this.properties[key]?.current;
@@ -317,40 +336,6 @@ export abstract class Comp extends HTMLElement {
                 if (!prop) return;
                 if (prop.current === value) return;
                 prop.current = value;
-                this.update();
-            },
-            enumerable: true,
-            configurable: true,
-        });
-
-        // Loading state
-        Object.defineProperty(proto, `${key}_loading`, {
-            get(this: Comp) {
-                return this.properties[key]?.loading;
-            },
-            set(this: Comp, value: any) {
-                const prop = this.properties[key];
-                if (!prop) return;
-                if (prop.loading === value) return;
-
-                prop.loading = value;
-                this.update();
-            },
-            enumerable: true,
-            configurable: true,
-        });
-
-        // Error state
-        Object.defineProperty(proto, `${key}_error`, {
-            get(this: Comp) {
-                return this.properties[key]?.error;
-            },
-            set(this: Comp, value: any) {
-                const prop = this.properties[key];
-                if (!prop) return;
-                if (prop.error === value) return;
-
-                prop.error = value;
                 this.update();
             },
             enumerable: true,
@@ -394,7 +379,10 @@ export abstract class Comp extends HTMLElement {
 
         if (typeof this.beforeRender === "function") this.beforeRender();
         const html = this.buildHTML();
-        const css = this.createCSS() || "";
+        let css = this.css ? this.css : "";
+        if (typeof css === "function") css = css.call(this);
+
+        console.log("CSS: " + this.css);
         this.shadowRoot.innerHTML = this.createTemplate(
             html,
             this.compileCSSObjects(css)
@@ -403,21 +391,20 @@ export abstract class Comp extends HTMLElement {
         if (typeof this.afterRender === "function") this.afterRender();
     }
 
-    private buildHTML(): string {
+    private buildHTML(input?: any): string {
         let html = "";
-        if (typeof this.html === "function") {
-            html = this.html();
-        } else if (typeof this.html === "string") {
-            html = this.html;
-        } else if (
-            typeof this.html === "object" &&
-            this.html !== null &&
-            "html" in this.html
-        ) {
-            html =
-                typeof this.html.html === "function"
-                    ? this.html.html()
-                    : this.html.html;
+        const source = input ?? this.html;
+
+        if (typeof source === "function") {
+            html = source();
+        } else if (typeof source === "string") {
+            html = source;
+        } else if (typeof source === "object" && source !== null) {
+            if ("html" in source) {
+                return this.buildHTML(source.html);
+            } else {
+                throw new Error("Object html must contain an 'html' property.");
+            }
         } else {
             throw new Error("Invalid html definition.");
         }
