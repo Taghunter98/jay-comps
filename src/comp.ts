@@ -181,7 +181,10 @@ export abstract class Comp extends HTMLElement {
 
     private mounted = false;
 
-    private html!: string;
+    private html!:
+        | string
+        | (() => string)
+        | { html: string | (() => string); css?: string };
     private css!: Array<CSSConfig> | CSSConfig;
 
     constructor() {
@@ -390,12 +393,36 @@ export abstract class Comp extends HTMLElement {
         if (!this.shadowRoot) throw new Error("Shadow root is not available.");
 
         if (typeof this.beforeRender === "function") this.beforeRender();
+        const html = this.buildHTML();
+        const css = this.createCSS() || "";
         this.shadowRoot.innerHTML = this.createTemplate(
-            Object.values(this.html)[0],
-            this.compileCSSObjects(this.createCSS())
+            html,
+            this.compileCSSObjects(css)
         );
 
         if (typeof this.afterRender === "function") this.afterRender();
+    }
+
+    private buildHTML(): string {
+        let html = "";
+        if (typeof this.html === "function") {
+            html = this.html();
+        } else if (typeof this.html === "string") {
+            html = this.html;
+        } else if (
+            typeof this.html === "object" &&
+            this.html !== null &&
+            "html" in this.html
+        ) {
+            html =
+                typeof this.html.html === "function"
+                    ? this.html.html()
+                    : this.html.html;
+        } else {
+            throw new Error("Invalid html definition.");
+        }
+
+        return html;
     }
 
     /**
@@ -468,7 +495,7 @@ export abstract class Comp extends HTMLElement {
 
         if (typeof this.beforeRender === "function") this.beforeRender();
 
-        const html = newHTML || this.html;
+        const html = newHTML || this.buildHTML();
         const css = newCSS || this.createCSS();
 
         this.shadowRoot.innerHTML = this.createTemplate(
