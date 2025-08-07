@@ -15,7 +15,8 @@ import { Effects } from "./effects.js";
 
 type PropState<T = any> = {
     value: T;
-    callback?: T;
+    callback?: () => void | Promise<void>;
+    onRender?: () => void | Promise<void>;
     current: T;
 };
 
@@ -270,7 +271,7 @@ export abstract class Comp extends HTMLElement {
             if (
                 val &&
                 typeof val === "object" &&
-                ("value" in val || "callback" in val)
+                ("value" in val || "callback" in val || "onRender" in val)
             ) {
                 const resolve = (v: any) => (typeof v === "function" ? v() : v);
 
@@ -279,6 +280,10 @@ export abstract class Comp extends HTMLElement {
                     callback:
                         typeof val.callback === "function"
                             ? val.callback
+                            : undefined,
+                    onRender:
+                        typeof val.onRender === "function"
+                            ? val.onRender
                             : undefined,
                     current: resolve(val.value),
                 };
@@ -385,12 +390,13 @@ export abstract class Comp extends HTMLElement {
 
         const html = this.buildHTML();
         const css = this.buildCSS();
-        console.log("Building template...");
+
         this.shadowRoot.innerHTML = this.createTemplate(
             html,
             this.compileCSSObjects(css)
         );
-        console.log("Running hooks...");
+
+        this.runOnRenderHooks();
         this.runPostRenderHooks();
     }
 
@@ -438,13 +444,26 @@ export abstract class Comp extends HTMLElement {
             html,
             this.compileCSSObjects(css)
         );
+
+        this.runPostRenderHooks();
     }
 
     private runPostRenderHooks() {
         for (const key in this.properties) {
             const prop = this.properties[key];
             if (prop && typeof prop.callback === "function") {
+                console.log("Running post render hooks...");
                 prop.callback.call(this);
+            }
+        }
+    }
+
+    private runOnRenderHooks() {
+        for (const key in this.properties) {
+            const prop = this.properties[key];
+            if (prop && typeof prop.onRender === "function") {
+                console.log("Running on render hooks...");
+                prop.onRender.call(this);
             }
         }
     }
