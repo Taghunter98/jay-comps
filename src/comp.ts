@@ -11,7 +11,6 @@
 
 import { API, ApiResponse, FetchEntry } from "./api.js";
 import { CSSConfig, Design } from "./design.js";
-import { Effects } from "./effects.js";
 
 type PropState<T = any> = {
     value: T;
@@ -166,7 +165,6 @@ type PropState<T = any> = {
  */
 export abstract class Comp extends HTMLElement {
     private api = new API();
-    public effect = new Effects();
     private design = new Design();
 
     // Tracks component registration
@@ -267,12 +265,28 @@ export abstract class Comp extends HTMLElement {
         this.register(this);
     }
 
+    // List of internal properties to ignore
+    private static readonly INTERNAL_KEYS = new Set([
+        "api",
+        "design",
+        "unsubscribers",
+        "listeners",
+        "properties",
+        "mounted",
+        "html",
+        "css",
+    ]);
+
     /**
      * Scans the instance for properties that match the { default } pattern.
      * Creates the internal `properties` map and removes those props from the instance.
      */
     private createProps() {
         for (const key of Object.keys(this)) {
+            if ((this.constructor as typeof Comp).INTERNAL_KEYS.has(key)) {
+                continue;
+            }
+
             const val = (this as any)[key];
 
             if (
@@ -305,21 +319,19 @@ export abstract class Comp extends HTMLElement {
                 "css" in val
             ) {
                 this.html = val;
-
-                const rawCSS = val.css;
-                if (rawCSS && typeof rawCSS === "object" && "value" in rawCSS) {
-                    this.css = rawCSS.value;
-                } else {
-                    this.css = rawCSS;
-                }
-            } else if (val && typeof val === "object" && "html" in val) {
-                this.html = val;
-            } else if (val && typeof val === "object" && "css" in val) {
                 const rawCSS = val.css;
                 this.css =
                     typeof rawCSS === "object" && "value" in rawCSS
                         ? rawCSS.value
                         : rawCSS;
+            } else {
+                console.log("Creating prop: " + key);
+                this.properties[key] = {
+                    value: val,
+                    current: val,
+                };
+
+                delete (this as any)[key];
             }
         }
     }
@@ -548,17 +560,61 @@ export abstract class Comp extends HTMLElement {
     }
 
     /**
-     * ## setProp
+     * ## set
+     *
+     * Sets a property based on key and value
      */
-    public setProp(key: string, value: any) {
-        for (const k in this.properties) {
-            const prop = this.properties[k];
-            if (prop.current == "object") {
-                for (const p in prop.current) {
-                    if (p === key) console.log("Found prop");
+    public set(key: string, value: any) {
+        const keys = key.split(".");
+
+        const propName = keys.shift()!;
+        const prop = this.properties[propName];
+
+        if (!prop) {
+            throw new Error(`Property '${propName}' does not exist`);
+        }
+
+        // Set top-level prop
+        if (keys.length === 0) {
+            prop.current = value;
+        }
+        // Set nested value for objects
+        else {
+            let target = prop.current;
+
+            for (let i = 0; i < keys.length - 1; i++) {
+                if (target && typeof target === "object") {
+                    target = target[keys[i]];
+                } else {
+                    throw new Error(`Invalid nested path in '${key}'`);
                 }
             }
+
+            const finalKey = keys[keys.length - 1];
+            if (target && typeof target === "object") {
+                target[finalKey] = value;
+            } else {
+                throw new Error(`Invalid nested path in '${key}'`);
+            }
         }
+
+        this.update?.(); // Trigger re-render or change
+    }
+
+    /**
+     * ## get
+     *
+     * Returns a property
+     */
+    public get(key: string): any {
+        const keys = key.split(".");
+        let val = this.properties[keys.shift()!]?.current;
+
+        for (const k of keys) {
+            val = val?.[k];
+        }
+
+        return val;
     }
 
     /**
