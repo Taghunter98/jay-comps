@@ -189,6 +189,19 @@ export abstract class Comp extends HTMLElement {
         | { html: string | (() => string); css?: string };
     private css!: Array<CSSConfig> | CSSConfig;
 
+    // List of internal properties to ignore
+    private static readonly INTERNAL_KEYS = new Set([
+        "api",
+        "design",
+        "unsubscribers",
+        "listeners",
+        "properties",
+        "mounted",
+        "propNameToSymbol",
+        "html",
+        "css",
+    ]);
+
     constructor() {
         super();
         this.attachShadow({ mode: "open" });
@@ -266,19 +279,6 @@ export abstract class Comp extends HTMLElement {
         this.register(this);
     }
 
-    // List of internal properties to ignore
-    private static readonly INTERNAL_KEYS = new Set([
-        "api",
-        "design",
-        "unsubscribers",
-        "listeners",
-        "properties",
-        "mounted",
-        "propNameToSymbol",
-        "html",
-        "css",
-    ]);
-
     /**
      * Method scans the instance for properties and creates internal accessor methods.
      * Then hooks are detected via the `callback` and `onRender` keywords and added to be
@@ -287,6 +287,11 @@ export abstract class Comp extends HTMLElement {
      * Creates the internal `properties` map and removes those props from the instance.
      */
     private createProps() {
+        const lifecycleHooks = {
+            onRender: [] as Function[],
+            callback: [] as Function[],
+        };
+
         for (const key of Object.keys(this)) {
             if ((this.constructor as typeof Comp).INTERNAL_KEYS.has(key)) {
                 continue;
@@ -297,23 +302,15 @@ export abstract class Comp extends HTMLElement {
             this.propNameToSymbol.set(key, propSymbol);
 
             if (
-                val &&
-                typeof val === "object" &&
-                ("callback" in val || "onRender" in val)
+                typeof val === "function" &&
+                (key === "callback" || key === "onRender")
             ) {
-                const resolve = (v: any) => (typeof v === "function" ? v() : v);
-
+                console.log("Found hook " + key);
                 this.properties[propSymbol] = {
-                    value: resolve(val.value),
-                    callback:
-                        typeof val.callback === "function"
-                            ? val.callback
-                            : undefined,
-                    onRender:
-                        typeof val.onRender === "function"
-                            ? val.onRender
-                            : undefined,
-                    current: resolve(val.value),
+                    value: undefined,
+                    current: undefined,
+                    callback: key === "callback" ? val : undefined,
+                    onRender: key === "onRender" ? val : undefined,
                 };
 
                 delete (this as any)[key];
@@ -349,18 +346,20 @@ export abstract class Comp extends HTMLElement {
         const proto = Object.getPrototypeOf(this);
         const ctor = proto.constructor;
 
+        const keywords = ["component", "onClick"];
+
         if (Comp.definedAccessors.has(ctor)) return;
 
         for (const [key, symbol] of this.propNameToSymbol.entries()) {
-            console.log("Creating accessors for: " + key);
-            this.defineProp(proto, key, symbol); // pass both
+            if (keywords.includes(key)) continue;
+            this.defineProp(proto, key, symbol);
         }
 
         Comp.definedAccessors.add(ctor);
     }
 
     /**
-     * Defines a property and its `loading`/`error` accessors on the given prototype.
+     * Defines a property and its accessors on the given prototype.
      */
     private defineProp(proto: any, key: string, symbol: symbol) {
         Object.defineProperty(proto, key, {
@@ -481,7 +480,9 @@ export abstract class Comp extends HTMLElement {
         for (const [key, symbol] of this.propNameToSymbol.entries()) {
             const prop = this.properties[symbol];
             if (prop && typeof prop.callback === "function") {
-                console.log(`Running post render hook for: ${key}`);
+                console.log(
+                    `Running post render hook for: ${key} data: ${prop.callback}`
+                );
                 prop.callback.call(this);
             }
         }
