@@ -176,7 +176,8 @@ export abstract class Comp extends HTMLElement {
 
     // Properties and prop accessor methods (Getter/Setter)
     private static definedAccessors = new WeakSet<Function>();
-    protected properties: Record<string, PropState> = {};
+    protected properties: Record<symbol, PropState> = {};
+    private propNameToSymbol = new Map<string, symbol>();
 
     // Tracks component state
     private mounted = false;
@@ -273,12 +274,16 @@ export abstract class Comp extends HTMLElement {
         "listeners",
         "properties",
         "mounted",
+        "propNameToSymbol",
         "html",
         "css",
     ]);
 
     /**
-     * Scans the instance for properties that match the { default } pattern.
+     * Method scans the instance for properties and creates internal accessor methods.
+     * Then hooks are detected via the `callback` and `onRender` keywords and added to be
+     * run when called.
+     *
      * Creates the internal `properties` map and removes those props from the instance.
      */
     private createProps() {
@@ -288,15 +293,17 @@ export abstract class Comp extends HTMLElement {
             }
 
             const val = (this as any)[key];
+            const propSymbol = Symbol(key);
+            this.propNameToSymbol.set(key, propSymbol);
 
             if (
                 val &&
                 typeof val === "object" &&
-                ("value" in val || "callback" in val || "onRender" in val)
+                ("callback" in val || "onRender" in val)
             ) {
                 const resolve = (v: any) => (typeof v === "function" ? v() : v);
 
-                this.properties[key] = {
+                this.properties[propSymbol] = {
                     value: resolve(val.value),
                     callback:
                         typeof val.callback === "function"
@@ -310,9 +317,7 @@ export abstract class Comp extends HTMLElement {
                 };
 
                 delete (this as any)[key];
-            }
-            // define HTML/CSS
-            else if (
+            } else if (
                 val &&
                 typeof val === "object" &&
                 "html" in val &&
@@ -326,7 +331,7 @@ export abstract class Comp extends HTMLElement {
                         : rawCSS;
             } else {
                 console.log("Creating prop: " + key);
-                this.properties[key] = {
+                this.properties[propSymbol] = {
                     value: val,
                     current: val,
                 };
@@ -346,8 +351,9 @@ export abstract class Comp extends HTMLElement {
 
         if (Comp.definedAccessors.has(ctor)) return;
 
-        for (const key of Object.keys(this.properties)) {
-            this.defineProp(proto, key);
+        for (const [key, symbol] of this.propNameToSymbol.entries()) {
+            console.log("Creating accessors for: " + key);
+            this.defineProp(proto, key, symbol); // pass both
         }
 
         Comp.definedAccessors.add(ctor);
@@ -356,17 +362,18 @@ export abstract class Comp extends HTMLElement {
     /**
      * Defines a property and its `loading`/`error` accessors on the given prototype.
      */
-    private defineProp(proto: any, key: string) {
+    private defineProp(proto: any, key: string, symbol: symbol) {
         Object.defineProperty(proto, key, {
             get(this: Comp) {
-                return this.properties[key]?.current;
+                return this.properties[symbol]?.current;
             },
             set(this: Comp, value: any) {
-                const prop = this.properties[key];
+                const prop = this.properties[symbol];
                 if (!prop) return;
                 if (prop.current === value) return;
+
                 prop.current = value;
-                this.update();
+                this.update?.();
             },
             enumerable: true,
             configurable: true,
@@ -471,10 +478,10 @@ export abstract class Comp extends HTMLElement {
      * Method runs all callback functions from the properties map.
      */
     private runPostRenderHooks() {
-        for (const key in this.properties) {
-            const prop = this.properties[key];
+        for (const [key, symbol] of this.propNameToSymbol.entries()) {
+            const prop = this.properties[symbol];
             if (prop && typeof prop.callback === "function") {
-                console.log("Running post render hooks...");
+                console.log(`Running post render hook for: ${key}`);
                 prop.callback.call(this);
             }
         }
@@ -484,10 +491,12 @@ export abstract class Comp extends HTMLElement {
      * Method runs all on render hooks from the properties map.
      */
     private runOnRenderHooks() {
-        for (const key in this.properties) {
-            const prop = this.properties[key];
+        const symbols = Object.getOwnPropertySymbols(this.properties);
+
+        for (const sym of symbols) {
+            const prop = this.properties[sym];
             if (prop && typeof prop.onRender === "function") {
-                console.log("Running on render hooks...");
+                console.log("Running on render hook for:", sym.toString());
                 prop.onRender.call(this);
             }
         }
@@ -557,64 +566,6 @@ export abstract class Comp extends HTMLElement {
         }
 
         return out;
-    }
-
-    /**
-     * ## set
-     *
-     * Sets a property based on key and value
-     */
-    public set(key: string, value: any) {
-        const keys = key.split(".");
-
-        const propName = keys.shift()!;
-        const prop = this.properties[propName];
-
-        if (!prop) {
-            throw new Error(`Property '${propName}' does not exist`);
-        }
-
-        // Set top-level prop
-        if (keys.length === 0) {
-            prop.current = value;
-        }
-        // Set nested value for objects
-        else {
-            let target = prop.current;
-
-            for (let i = 0; i < keys.length - 1; i++) {
-                if (target && typeof target === "object") {
-                    target = target[keys[i]];
-                } else {
-                    throw new Error(`Invalid nested path in '${key}'`);
-                }
-            }
-
-            const finalKey = keys[keys.length - 1];
-            if (target && typeof target === "object") {
-                target[finalKey] = value;
-            } else {
-                throw new Error(`Invalid nested path in '${key}'`);
-            }
-        }
-
-        this.update?.(); // Trigger re-render or change
-    }
-
-    /**
-     * ## get
-     *
-     * Returns a property
-     */
-    public get(key: string): any {
-        const keys = key.split(".");
-        let val = this.properties[keys.shift()!]?.current;
-
-        for (const k of keys) {
-            val = val?.[k];
-        }
-
-        return val;
     }
 
     /**
