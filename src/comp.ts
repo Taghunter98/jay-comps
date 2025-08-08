@@ -9,7 +9,7 @@
  * Licence:     Apache 2.0
  */
 
-import { API, ApiResponse, FetchEntry } from "./api.js";
+import { API, ApiResponse } from "./api.js";
 import { CSSConfig, Design } from "./design.js";
 
 type PropState<T = any> = {
@@ -19,153 +19,394 @@ type PropState<T = any> = {
     current: T;
 };
 
+interface ComponentDefinition {
+    html: string | (() => string);
+    css?: CSSConfig[] | (() => CSSConfig[]);
+}
+
+interface CompHooks {
+    component?: ComponentDefinition;
+    onRender?: () => void;
+    callback?: () => void;
+}
+
 /**
  * # Comp
  *
- * Abstract base class for creating components that encapsulates:
+ * Abstract base class for building reusable, encapsulated Web Components with:
+ *
  * - Shadow DOM setup
- * - Template rendering (HTML + CSS injection)
- * - Data fetching (`request()`, `submitForm()`, `fetchOnce()`)
- * - Event pub/sub (`publish()`, `subscribe()`)
- * - CSS generation from native JavaScript objects with media queries & keyframes
- * - Lifecycle hooks (`beforeRender()`, `createHTML()`, `createCSS()`, `afterRender()`)
- * - Helpers for accessing internal elements (`getById()`, `query()`, `queryAll()`)
+ * - Declarative rendering via a `component` object
+ * - Reactive property system with auto-updating DOM
+ * - Lifecycle hooks: `onRender()` and `callback()`
+ * - Event pub/sub system
+ * - CSS generation via native JavaScript/TypeScript objects
+ * - Built-in data fetching utilities
  *
- * ## Overview
+ * ---
  *
- * 1. `beforeRender()` runs before any DOM or CSS is injected.
- * 2. An open shadow root is attached.
- * 3. `createHTML()` and `createCSS()` generate the markup and styles.
- * 4. HTML/CSS are injected via `render()`.
- * 5. `afterRender()` runs to wire up event listeners or start effects.
+ * ## Component Lifecycle
  *
- * ## CSS Generation
+ * The component lifecycle is:
  *
- * Build scoped styles from `CSSConfig` or an array of them.
- * Supports:
- * - **Standard rules:** `class`, `pseudoClass`, fallback to `:host`
- * - **Media queries:** use `media` key with breakpoint props (e.g. `maxWidthBp`, nested configs)
- * - **Keyframes:** use `keyframes` key for pure or hybrid `@keyframes` blocks
- * - **Operators:** append suffixes to camelCase props for units/functions
+ * 1. Shadow root is attached
+ * 2. `component.html()` and `component.css()` are invoked
+ * 3. HTML and compiled CSS are injected into the shadow DOM
+ * 4. `onRender()` is called once after the first render
+ * 5. `callback()` runs after every render (initial + updates)
  *
- * ### Operators
- * - `Percent` -> `%`
- * - `Var`     -> `var(--<value>)`
- * - `Url`     -> `url(<value>)`
- * - `Calc`    -> `calc(<value>)`
- * - `Em`      -> `em`
- * - `Rem`     -> `rem`
- * - `Vw`      -> `vw`
- * - `Vh`      -> `vh`
- * - `Vmin`    -> `vmin`
- * - `Vmax`    -> `vmax`
- * - `Ch`      -> `ch`
- * - `Ex`      -> `ex`
- * - `Pt`      -> `pt`
- * - `Pc`      -> `pc`
- * - `In`      -> `in`
- * - `Cm`      -> `cm`
- * - `Mm`      -> `mm`
- * - `Fr`      -> `fr`
- * - `S`       -> `s`
- * - `Ms`      -> `ms`
- * - `Deg`     -> `deg`
- * - `Rad`     -> `rad`
- * - `Grad`    -> `grad`
- * - `Turn`    -> `turn`
- * - `Dpi`     -> `dpi`
- * - `Dpcm`    -> `dpcm`
- * - `Dppx`    -> `dppx`
- * - `Q`       -> `q`
- * - `Hz`      -> `Hz`
- * - `KHz`     -> `kHz`
+ * ---
+ *
+ * ## Component Definition
+ *
+ * Use the `component` object to define DOM structure and scoped styles:
+ *
+ * ```ts
+ * component = {
+ *   html: () => `<div class="greeting">${this.text}</div>`,
+ *   css: () => [
+ *     {
+ *       class: "greeting",
+ *       colour: "blue",
+ *       padding: [12, 16],
+ *     }
+ *   ]
+ * };
+ * ```
+ *
+ * - `html()` returns a string (template-safe)
+ * - `css()` returns one or more JS style objects compiled by Jay's CSS compiler
+ *
+ * ---
+ *
+ * ## Lifecycle Hooks
+ *
+ * Hooks are declared directly on the component instance:
+ *
+ * - `onRender()` — runs once after the initial render (e.g. to manipulate children)
+ * - `callback()` — runs after every render (e.g. to bind events)
+ *
+ * Example:
+ * ```ts
+ * onRender = () => {
+ *   this.query("#submit").text = "Submit Now";
+ * };
+ *
+ * callback = () => {
+ *   this.query("#submit").addEventListener("click", () => {
+ *     this.publish("form-submitted");
+ *   });
+ * };
+ * ```
+ *
+ * ---
+ *
+ * ## Reactive Properties
+ *
+ * Declare props as class fields:
+ *
+ * ```ts
+ * class Button extends Comp {
+ *   text = "Click me";
+ *   fill = true;
+ *
+ *   component = {
+ *     html: () => `<button>${this.text}</button>`,
+ *     css: () => [{ width: this.fill ? "100%" : "auto" }]
+ *   };
+ * }
+ * ```
+ *
+ * All props are converted into accessors per instance and scoped using `Symbol`s,
+ * ensuring no cross-instance collisions. Changing a prop triggers a re-render.
+ *
+ * ---
+ *
+ * ## Jay CSS Compiler
+ *
+ * CSS is generated via plain JS/TS objects using `CSSConfig` objects:
+ *
+ * - Style definitions are scoped to each component’s shadow DOM
+ * - Supports **media queries**, **pseudo-selectors**, and **keyframes**
+ * - Accepts native data types: arrays, numbers, booleans, strings
+ * - Adds **unit operators** via naming conventions (e.g. `widthPercent`)
+ * - Supports **UK English** spellings for **CSS properties**
+ *
+ * ### Operators (Suffix-Based)
+ *
+ * | **Operator**                | **CSS Output**           | **Example**                                | **Compiled CSS**                              |
+ * |----------------------------|---------------------------|---------------------------------------------|-----------------------------------------------|
+ * | *(default number)*         | `px` (if non-zero)        | `margin: 16`                                | `margin: 16px;`                                |
+ * | `Percent`                  | `%`                       | `widthPercent: 50`                          | `width: 50%;`                                  |
+ * | `Var`                      | `var(--…)`                | `colourVar: "blue100"`                      | `color: var(--blue100);`                       |
+ * | `Url`                      | `url(...)`                | `backgroundImageUrl: "hero.jpg"`            | `background-image: url(hero.jpg);`            |
+ * | `Calc`                     | `calc(...)`               | `widthCalc: "100% - 32px"`                  | `width: calc(100% - 32px);`                    |
+ * | `Em`, `Rem`                | `em`, `rem`               | `paddingEm: 1.5`, `marginRem: 2`            | `padding: 1.5em;`, `margin: 2rem;`             |
+ * | `Vw`, `Vh`, `Vmin`, `Vmax` | viewport units            | `heightVh: 80`                              | `height: 80vh;`                                |
+ * | `Ch`, `Ex`                 | character units           | `textIndentCh: 2`, `fontSizeEx: 1`          | `text-indent: 2ch;`, `font-size: 1ex;`         |
+ * | `Pt`, `Pc`                 | print-based units         | `fontSizePt: 12`                            | `font-size: 12pt;`                             |
+ * | `In`, `Cm`, `Mm`, `Q`      | metric/absolute lengths   | `widthCm: 10`, `borderQ: 4`                 | `width: 10cm;`, `border: 4q;`                  |
+ * | `Fr`                       | grid fractions            | `gridTemplateColumnsFr: [1, 2]`             | `grid-template-columns: 1fr 2fr;`              |
+ * | `S`, `Ms`                  | time units                | `transitionDurationS: 0.3`, `delayMs: 200`  | `transition-duration: 0.3s;`, `delay: 200ms;`  |
+ * | `Deg`, `Rad`, `Grad`, `Turn` | angle units             | `rotateDeg: 45`                             | `transform: rotate(45deg);`                    |
+ * | `Dpi`, `Dpcm`, `Dppx`      | resolution units          | `resolutionDpi: 300`                        | `resolution: 300dpi;`                          |
+ * | `Hz`, `KHz`                | frequency                 | `audioRateHz: 60`, `signalKHz: 2.4`         | `audio-rate: 60Hz;`, `signal: 2.4kHz;`         |
+ * | *(Raw string / keyword)*   | used directly             | `display: "flex"`                           | `display: flex;`                               |
+ * | *(Array shorthand)*        | space-separated values    | `padding: [8, 16]`                          | `padding: 8px 16px;`                           |
+ * | `pseudoClass`              | selector suffix           | `pseudoClass: "hover"`                      | `.my-class:hover { ... }`                      |
+ *
+ * Also supports:
+ * - `media` key with nested responsive styles
+ * - `keyframes` for defining animations
+ *
+ * Example:
+ * ```ts
+ * css: () => [
+ *   {
+ *     class: "box",
+ *     widthPercent: 100,
+ *     backgroundVar: "accent",
+ *     media: {
+ *       maxWidthBp: 768,
+ *       padding: 16
+ *     }
+ *   },
+ *   {
+ *     keyframes: {
+ *       name: "fade-in",
+ *       from: { opacity: 0 },
+ *       to: { opacity: 1 }
+ *     }
+ *   }
+ * ]
+ * ```
+ *
+ * ---
+ *
+ * ## Re-rendering
+ *
+ * Components update automatically when reactive properties change.
+ *
+ * To force a manual update:
+ * ```ts
+ * this.update(); // Regenerates HTML + CSS from `component`
+ * ```
+ *
+ * ---
  *
  * ## Event Pub/Sub
  *
- * - **publish(name, detail?)**
- *   Dispatch a bubbling, composed `CustomEvent`.
+ * Use the built-in event system for component communication:
  *
- * - **subscribe<T>(name, listener, options?, autoCleanup?)**
- *   Listen for an event, deduplicate by name, and auto-unsubscribe on disconnect.
- *   Returns an unsubscribe function.
+ * - `publish(name: string, detail?: any)`
+ *   Emits a bubbling, composed `CustomEvent`
+ *
+ * - `subscribe(name, listener, options?, autoCleanup?)`
+ *   Subscribes to an event and optionally unsubscribes on disconnect
+ *
+ * Example:
+ * ```ts
+ * this.subscribe("modal-open", () => this.open = true);
+ * this.publish("user-logged-in", { id: 42 });
+ * ```
+ *
+ * ---
  *
  * ## Data Fetching
  *
- * - **request<Api>(url, method, data?)**
- *   JSON GET/POST helper returning typed data.
+ * - `request<Api>(url, method, data?)` — Typed JSON GET/POST
+ * - `submitForm<Api>(url, form|FormData|object)` — Multipart POST
  *
- * - **submitForm<Api>(url, form \| FormData \| Record)**
- *   Multipart form POST returning parsed JSON.
+ * ---
  *
- * - **fetchOnce<Key,Value>(key, fetcher)**
- *   Memoised fetch to avoid duplicate requests in a render cycle.
+ * ## Utility Methods
  *
- * ## Properties
+ * - `render()` — Initial render into shadow DOM
+ * - `update()` — Manual re-render
+ * - `query(selector)` — Scoped query inside shadow DOM
+ * - `queryAll(selector)` — Multiple matches
+ * - `getById(id)` — Optimised `getElementById`
  *
- * - **design** (`Design`)   — style builder & default host rules
- * - **api** (`API`)         — HTTP & submission helpers
- * - **effect** (`Effects`)  — animation & side-effect utilities
+ * ---
  *
- * ## Methods
+ * ## Static API
  *
- * - `render()`
- * - `update(html?, css?)`
- * - `css(config \| config[])`
- * - `beforeRender()`
- * - `createHTML()`
- * - `createCSS()`
- * - `afterRender()`
- * - `publish()` / `subscribe()`
- * - `request()` / `submitForm()` / `fetchOnce()`
+ * - `static define()` — Registers the component as a custom element
+ *
+ * ---
  *
  * ## Example
  *
  * ```ts
+ * class MyButton extends Comp {
+ *   text = "Send";
+ *   fill = true;
  *
- * class MyComp extends Comp {
- *   private msg: string;
- *
- *   beforeRender() {
- *      if (!this.msg) this.msg = "Hello Jay!";
- *   }
- *
- *   createHTML() { return `<button>${this.msg}</button>`; }
- *
- *   createCSS() {
- *     return [
+ *   component = {
+ *     html: () => `<button class="btn">${this.text}</button>`,
+ *     css: () => [
  *       {
  *         class: "btn",
  *         backgroundVar: "primary",
  *         colour: "white",
- *         padding: [8,16],
- *         borderRadiusPercent: 50,
- *         media: {
- *           maxWidthBp: 600,
- *           padding: 5
- *         }
- *       },
- *       {
- *         keyframes: {
- *           name: "pulse",
- *           from: { opacity: 1 },
- *           "50%": { opacity: 0.5 },
- *           to: { opacity: 1 }
- *         }
+ *         padding: [8, 16],
+ *         width: this.fill ? "100%" : "auto",
+ *         borderRadius: 4
  *       }
- *     ];
- *   }
+ *     ]
+ *   };
  *
- *   afterRender() {
- *     this.subscribe("pulse-done", () => console.log("done"));
- *   }
+ *   callback = () => {
+ *     this.query("button").addEventListener("click", () => {
+ *       this.publish("clicked", { id: 1 });
+ *     });
+ *   };
  *
- *   static { Comp.register(this); }
+ *   static {
+ *     this.define();
+ *   }
  * }
  * ```
  */
-export abstract class Comp extends HTMLElement {
+export abstract class Comp extends HTMLElement implements CompHooks {
     private api = new API();
     private design = new Design();
+
+    /**
+     * ## component
+     *
+     * Defines the visual and structural representation of the component.
+     * Includes the `html` and optional `css` used during render and updates.
+     *
+     * - HTML can be a static string or a function returning a string.
+     * - CSS can be a single object or array of style objects, or a function returning them.
+     *
+     * ### Parameters
+     * - `html`: `string` | `() => string`
+     *   The markup rendered into the component’s shadow DOM.
+     *
+     * - `css?`: `CSSConfig` | `CSSConfig[]` | `() => CSSConfig | CSSConfig[]`
+     *   The styles scoped to the component. See the **Jay CSS Compiler** section for syntax.
+     *
+     * ### Notes
+     * - The `css` function is re-evaluated on every update cycle.
+     * - All styles are fully encapsulated via Shadow DOM and the Jay compiler.
+     *
+     * ### Throws
+     * May throw an `Error` if:
+     * - `html` returns an invalid or empty string
+     * - `css` returns malformed objects or unsupported values
+     *
+     * ### Examples
+     *
+     * ```ts
+     * // Static Component
+     * export class MyComp extends Comp {
+     *   component = {
+     *     html: `<h1 class="hello-world">Hello world!</h1>`,
+     *     css: {
+     *       class: "hello-world",
+     *       colour: "red",
+     *       fontSizePt: 24
+     *     }
+     *   };
+     * }
+     *
+     * // Reactive Component
+     * export class MyComp extends Comp {
+     *   hello = "Hello";
+     *   red = false;
+     *
+     *   component = {
+     *     html: () => `<h1 class="hello-world">${this.hello} world!</h1>`,
+     *     css: () => ({
+     *       class: "hello-world",
+     *       colour: this.red ? "red" : "black",
+     *       fontSizePt: 24
+     *     })
+     *   };
+     * }
+     * ```
+     */
+    component?: ComponentDefinition;
+
+    /**
+     * ## onRender
+     *
+     * Lifecycle hook that runs after the DOM and styles are rendered,
+     * but **before** any event listeners or effects are attached.
+     *
+     * Use this to:
+     * - Set or modify child component props
+     * - Query the DOM
+     * - Run lightweight initialisation logic
+     *
+     * ### Throws
+     * May throw an `Error` if:
+     * - Elements referenced via `query()` or `getById()` are not yet present in the DOM
+     *
+     * ### Example
+     * ```ts
+     * export class MyComp extends Comp {
+     *   data: string;
+     *
+     *   onRender = async () => {
+     *     const res = await this.request("/get/fact", "GET");
+     *     this.data = res.ok ? res.data.fact : res.error;
+     *   };
+     *
+     *   component = {
+     *     html: () => `<p>${this.data}</p>`
+     *   };
+     * }
+     * ```
+     *
+     * ```ts
+     * // Setting props on nested components
+     * onRender = () => {
+     *   this.query("comp-button").text = "Click Me!";
+     * };
+     *
+     * component = {
+     *   html: `
+     *     <div>
+     *       <comp-button></comp-button>
+     *     </div>
+     *   `
+     * };
+     * ```
+     */
+    onRender?: () => void;
+
+    /**
+     * ## callback
+     *
+     * Lifecycle hook that runs **after render**, and after all DOM nodes
+     * have been attached and `onRender()` has completed.
+     *
+     * Use this for:
+     * - Setting up event listeners (e.g. `click`, `keydown`)
+     * - Subscribing to custom events via `subscribe()`
+     * - Running side effects or animations
+     *
+     * ### Example
+     * ```ts
+     * callback = () => {
+     *   this.query("button").addEventListener("click", () => {
+     *     console.log("Button clicked!");
+     *   });
+     *
+     *   this.subscribe("modal-closed", () => {
+     *     this.hidden = true;
+     *   });
+     * };
+     *
+     * component = {
+     *   html: `<button>Click me</button>`
+     * };
+     * ```
+     */
+    callback?: () => void;
 
     // Tracks component registration
     private static registry = new Set<string>();
@@ -281,24 +522,20 @@ export abstract class Comp extends HTMLElement {
 
     /**
      * Method scans the instance for properties and creates internal accessor methods.
+     *
      * Then hooks are detected via the `callback` and `onRender` keywords and added to be
      * run when called.
      *
      * Creates the internal `properties` map and removes those props from the instance.
      */
     private createProps() {
-        const lifecycleHooks = {
-            onRender: [] as Function[],
-            callback: [] as Function[],
-        };
-
         for (const key of Object.keys(this)) {
             if ((this.constructor as typeof Comp).INTERNAL_KEYS.has(key)) {
                 continue;
             }
 
             const val = (this as any)[key];
-            const propSymbol = Symbol(key);
+            const propSymbol = Symbol.for(`${this.tagName}-${key}`);
             this.propNameToSymbol.set(key, propSymbol);
 
             if (
@@ -341,6 +578,11 @@ export abstract class Comp extends HTMLElement {
     /**
      * Creates dynamic getters and setters on the instance's prototype
      * for all detected properties.
+     *
+     * Props are stored as Symbols which avoids name overlap and collisions if another instance
+     * uses the same prop definition.
+     *
+     * Collects defined accessors in the global set for referal.
      */
     private propAccessors() {
         const proto = Object.getPrototypeOf(this);
@@ -348,11 +590,9 @@ export abstract class Comp extends HTMLElement {
 
         const keywords = ["component", "onClick"];
 
-        if (Comp.definedAccessors.has(ctor)) return;
-
         for (const [key, symbol] of this.propNameToSymbol.entries()) {
             if (keywords.includes(key)) continue;
-            this.defineProp(proto, key, symbol);
+            this.defineProp(this, key, symbol);
         }
 
         Comp.definedAccessors.add(ctor);
@@ -360,15 +600,16 @@ export abstract class Comp extends HTMLElement {
 
     /**
      * Defines a property and its accessors on the given prototype.
+     *
+     * Props are defined per instance, with its own properties map, avoiding collisions.
      */
-    private defineProp(proto: any, key: string, symbol: symbol) {
-        Object.defineProperty(proto, key, {
+    private defineProp(instance: any, key: string, symbol: symbol) {
+        Object.defineProperty(instance, key, {
             get(this: Comp) {
                 return this.properties[symbol]?.current;
             },
             set(this: Comp, value: any) {
                 const prop = this.properties[symbol];
-                if (!prop) return;
                 if (prop.current === value) return;
 
                 prop.current = value;
@@ -377,6 +618,13 @@ export abstract class Comp extends HTMLElement {
             enumerable: true,
             configurable: true,
         });
+    }
+
+    public debugProperties() {
+        for (const [key, symbol] of this.propNameToSymbol.entries()) {
+            const prop = this.properties[symbol];
+            console.log(`Key: ${key} val: ${this.properties[symbol].current}`);
+        }
     }
 
     /**
@@ -480,9 +728,6 @@ export abstract class Comp extends HTMLElement {
         for (const [key, symbol] of this.propNameToSymbol.entries()) {
             const prop = this.properties[symbol];
             if (prop && typeof prop.callback === "function") {
-                console.log(
-                    `Running post render hook for: ${key} data: ${prop.callback}`
-                );
                 prop.callback.call(this);
             }
         }
@@ -497,7 +742,6 @@ export abstract class Comp extends HTMLElement {
         for (const sym of symbols) {
             const prop = this.properties[sym];
             if (prop && typeof prop.onRender === "function") {
-                console.log("Running on render hook for:", sym.toString());
                 prop.onRender.call(this);
             }
         }
