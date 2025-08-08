@@ -19,19 +19,19 @@ type PropState<T = any> = {
     current: T;
 };
 
-interface ComponentDefinition {
+export interface Template {
     html: string | (() => string);
     css?: CSSConfig[] | (() => CSSConfig[]);
 }
 
-interface CompHooks {
-    component?: ComponentDefinition;
+export interface ComponentHooks {
+    component?: Template;
     onRender?: () => void;
     callback?: () => void;
 }
 
 /**
- * # Comp
+ * # Component
  *
  * Abstract base class for building reusable, encapsulated Web Components with:
  *
@@ -268,7 +268,7 @@ interface CompHooks {
  * }
  * ```
  */
-export abstract class Comp extends HTMLElement implements CompHooks {
+export abstract class Component extends HTMLElement implements ComponentHooks {
     private api = new API();
     private design = new Design();
 
@@ -328,7 +328,7 @@ export abstract class Comp extends HTMLElement implements CompHooks {
      * }
      * ```
      */
-    component?: ComponentDefinition;
+    component?: Template;
 
     /**
      * ## onRender
@@ -466,19 +466,19 @@ export abstract class Comp extends HTMLElement implements CompHooks {
     /**
      * Method internally builds an HTML Element based off the classname prefixed with 'comp-'.
      */
-    private static register(ctor: typeof Comp) {
+    private static register(ctor: typeof Component) {
         const raw = ctor.name;
         if (!raw) throw new Error(`Can't auto-derive tag for ${ctor.name}`);
 
         const tag =
             "comp-" + raw.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
 
-        if (!Comp.registry.has(tag)) {
+        if (!Component.registry.has(tag)) {
             customElements.define(
                 tag,
                 ctor as unknown as CustomElementConstructor
             );
-            Comp.registry.add(tag);
+            Component.registry.add(tag);
         }
     }
 
@@ -530,7 +530,7 @@ export abstract class Comp extends HTMLElement implements CompHooks {
      */
     private createProps() {
         for (const key of Object.keys(this)) {
-            if ((this.constructor as typeof Comp).INTERNAL_KEYS.has(key)) {
+            if ((this.constructor as typeof Component).INTERNAL_KEYS.has(key)) {
                 continue;
             }
 
@@ -595,7 +595,7 @@ export abstract class Comp extends HTMLElement implements CompHooks {
             this.defineProp(this, key, symbol);
         }
 
-        Comp.definedAccessors.add(ctor);
+        Component.definedAccessors.add(ctor);
     }
 
     /**
@@ -605,10 +605,10 @@ export abstract class Comp extends HTMLElement implements CompHooks {
      */
     private defineProp(instance: any, key: string, symbol: symbol) {
         Object.defineProperty(instance, key, {
-            get(this: Comp) {
+            get(this: Component) {
                 return this.properties[symbol]?.current;
             },
-            set(this: Comp, value: any) {
+            set(this: Component, value: any) {
                 const prop = this.properties[symbol];
                 if (prop.current === value) return;
 
@@ -1182,4 +1182,9 @@ export abstract class Comp extends HTMLElement implements CompHooks {
         </style>
         `;
     }
+}
+
+export function Register<T extends typeof Component>(ctor: T) {
+    ctor.define();
+    return ctor;
 }
