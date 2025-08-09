@@ -4,13 +4,40 @@
  * Filename:    comp.ts
  * Author:      Josh Bassett
  * Date:        08/06/2025
- * Version:     1.4
+ * Version:     2.1.5
  *
  * Licence:     Apache 2.0
  */
 
 import { API, ApiResponse } from "./api.js";
 import { CSSConfig, Design } from "./design.js";
+
+/**
+ * User Types for component elements
+ */
+export {
+    HTMLTemplate as HTML,
+    CSSTemplate as CSS,
+    Template,
+    ComponentHook as Hook,
+};
+
+type HTMLTemplate = string | (() => string);
+
+type CSSTemplate =
+    | string
+    | CSSConfig
+    | CSSConfig[]
+    | (() => CSSConfig[])
+    | (() => CSSConfig)
+    | (() => string);
+
+interface Template {
+    html: HTMLTemplate;
+    css?: CSSTemplate;
+}
+
+type ComponentHook = () => void;
 
 type PropState<T = any> = {
     value: T;
@@ -19,15 +46,10 @@ type PropState<T = any> = {
     current: T;
 };
 
-export interface Template {
-    html: string | (() => string);
-    css?: CSSConfig[] | (() => CSSConfig[]);
-}
-
-export interface ComponentHooks {
+interface ComponentHooks {
     component?: Template;
-    onRender?: () => void;
-    callback?: () => void;
+    onRender?: ComponentHook;
+    callback?: ComponentHook;
 }
 
 /**
@@ -408,6 +430,39 @@ export abstract class Component extends HTMLElement implements ComponentHooks {
      */
     callback?: () => void;
 
+    /**
+     * ## html
+     *
+     * Defines the structural and visual markup of the component.
+     * - Can be a static string or a function returning a string.
+     * - The result is rendered into the component’s Shadow DOM.them.
+     *
+     * ### Type
+     * - `html: string | () => string;`
+     *
+     * ### Behaviour
+     * - The function form allows dynamic reactivity based on props.
+     * - html is re-evaluated on every update cycle.
+     * - Should return a valid HTML string.
+     *
+     * ### Throws
+     * May throw an `Error` if:
+     * - Returned value is not a string or is malformed
+     *
+     * ### Examples
+     *
+     * ```ts
+     * class MyComponent extends Component {
+     *    message = "Hello, Jay!";
+     *
+     *    html = () => <h1>${this.message}</h1>;
+     * }
+     * ```
+     */
+    html!: HTMLTemplate;
+
+    css!: CSSTemplate;
+
     // Tracks component registration
     private static registry = new Set<string>();
 
@@ -422,13 +477,6 @@ export abstract class Component extends HTMLElement implements ComponentHooks {
 
     // Tracks component state
     private mounted = false;
-
-    // Component template attributes
-    private html!:
-        | string
-        | (() => string)
-        | { html: string | (() => string); css?: string };
-    private css!: Array<CSSConfig> | CSSConfig;
 
     // List of internal properties to ignore
     private static readonly INTERNAL_KEYS = new Set([
@@ -552,10 +600,12 @@ export abstract class Component extends HTMLElement implements ComponentHooks {
 
                 delete (this as any)[key];
             } else if (
-                val &&
-                typeof val === "object" &&
-                "html" in val &&
-                "css" in val
+                (val &&
+                    typeof val === "object" &&
+                    "html" in val &&
+                    "css" in val) ||
+                key === "html" ||
+                key === "css"
             ) {
                 this.html = val;
                 const rawCSS = val.css;
@@ -776,10 +826,10 @@ export abstract class Component extends HTMLElement implements ComponentHooks {
     /**
      * Helper method builds CSS from the components css attribute.
      */
-    private buildCSS(): Array<CSSConfig> | CSSConfig | string {
-        let css = this.css ? this.css : "";
-        if (typeof css === "function") css = css.call(this);
-        return css;
+    private buildCSS(): CSSConfig[] | CSSConfig | string {
+        const css = this.css;
+        if (typeof css === "function") return (css as () => any).call(this);
+        return css ?? "";
     }
 
     /**
@@ -1184,6 +1234,31 @@ export abstract class Component extends HTMLElement implements ComponentHooks {
     }
 }
 
+/**
+ * ## Define
+ *
+ * Decorator to automatically define a component.
+ *
+ * ### Behaviour
+ * - Creates a new HTML Element based of the classname
+ * - Element is prefixed with "comp-" - e.g `Button` -> `comp-button`
+ * - TypeScript only, JavaScript users need to call `define()`
+ *
+ * * ### Type Parameters
+ * - `T` – The expected element type (defaults to `HTMLElement`).
+ *
+ *  * ### Parameters
+ * - `name` (`string`):
+ *   A valid HTML Element name, needs to contain a - e.g my-button
+ *
+ * ### Example
+ * ```ts
+ * @Define
+ * class Button extends Component {
+ *     // Your super cool component
+ * }
+ * ```
+ */
 export function Define<T extends typeof Component>(ctor: T) {
     ctor.define();
     return ctor;

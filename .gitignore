@@ -9,4 +9,4 @@ test/
 
 # TypeScript compiled JavaScript
 dist/
-dist-test/
+dist-tests/
