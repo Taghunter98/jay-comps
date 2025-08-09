@@ -1184,7 +1184,7 @@ export abstract class Component extends HTMLElement implements ComponentHooks {
     }
 }
 
-export function Register<T extends typeof Component>(ctor: T) {
+export function Define<T extends typeof Component>(ctor: T) {
     ctor.define();
     return ctor;
 }
